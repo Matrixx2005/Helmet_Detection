@@ -24,15 +24,33 @@ call :title "3. Nhan chuan cap nguoi (val, test)"
 call :rc
 
 for %%W in (%MODELS%) do (
-    call :title "4. Do nguong he luat tren val - %%~nW"
-    %M% batch --model %%W --conf 0.05 --input %DS%\images\val --output outputs\ppe_val_lowconf_%%~nW --no-images >> "%LOG%" 2>&1
-    %M% tune-rules --run outputs\ppe_val_lowconf_%%~nW --gt data\person_gt\val_person_gt.csv --output reports\rule_tuning\%%~nW >> "%LOG%" 2>&1
+    call :title "4. Do nguong tren val (YOLO conf 0.02 + do luoi offline) - %%~nW"
+    %M% batch --model %%W --conf-person 0.02 --conf-helmet 0.02 --conf-no-helmet 0.02 --conf-pose-person 0.02 --input %DS%\images\val --output outputs\ppe_val_lowconf_%%~nW --no-images >> "%LOG%" 2>&1
+    %M% tune-rules --use-pose on --run outputs\ppe_val_lowconf_%%~nW --gt data\person_gt\val_person_gt.csv --output reports\rule_tuning\%%~nW >> "%LOG%" 2>&1
     call :rc
-    call :title "5. Batch + danh gia he luat tren test - %%~nW"
-    %M% batch --model %%W --input %DS%\images\test --output outputs\ppe_test_%%~nW >> "%LOG%" 2>&1
+    call :title "5. Batch + danh gia he luat tren test voi nguong da do - %%~nW"
+    %M% batch --model %%W --params reports\rule_tuning\%%~nW\best_params.json --input %DS%\images\test --output outputs\ppe_test_%%~nW >> "%LOG%" 2>&1
     %M% eval-rules --run outputs\ppe_test_%%~nW --gt data\person_gt\test_person_gt.csv --output reports\rule_eval\%%~nW >> "%LOG%" 2>&1
     call :rc
 )
+call :title "5b. best.pt khong dung pose (do nguong rieng tren val, danh gia tren test)"
+%M% tune-rules --use-pose off --run outputs\ppe_val_lowconf_best --gt data\person_gt\val_person_gt.csv --output reports\rule_tuning\best_nopose >> "%LOG%" 2>&1
+%M% batch --model models\best.pt --params reports\rule_tuning\best_nopose\best_params.json --input %DS%\images\test --output outputs\ppe_test_best_nopose >> "%LOG%" 2>&1
+%M% eval-rules --run outputs\ppe_test_best_nopose --gt data\person_gt\test_person_gt.csv --output reports\rule_eval\best_nopose >> "%LOG%" 2>&1
+call :rc
+call :title "6. Doi chung: luat ngay tho (khong thay mu = vi pham) tren test"
+%M% eval-rules --baseline --run outputs\ppe_test_best --gt data\person_gt\test_person_gt.csv --output reports\rule_eval\baseline_naive >> "%LOG%" 2>&1
+call :rc
+call :title "7. Do nhay nguong IoU ghep nguoi (0.3)"
+%M% eval-rules --iou 0.3 --run outputs\ppe_test_best --gt data\person_gt\test_person_gt.csv --output reports\rule_eval\best_iou03 >> "%LOG%" 2>&1
+call :rc
+call :title "8. Cau hinh ban dau de so sanh: nguong chung 0.25, chua do nguong"
+%M% batch --model models\best.pt --no-pose --conf-person 0.25 --conf-helmet 0.25 --conf-no-helmet 0.25 --min-helmet-evidence 0.25 --min-no-helmet-evidence 0.25 --margin 0.1 --input %DS%\images\test --output outputs\ppe_test_best_untuned --no-images >> "%LOG%" 2>&1
+%M% eval-rules --run outputs\ppe_test_best_untuned --gt data\person_gt\test_person_gt.csv --output reports\rule_eval\best_untuned >> "%LOG%" 2>&1
+call :rc
+call :title "9. Bang so sanh cac cau hinh tren test"
+%M% compare-rules reports\rule_eval\best_untuned reports\rule_eval\baseline_naive reports\rule_eval\best_v2 reports\rule_eval\best_nopose reports\rule_eval\best --output reports\rule_eval\comparison >> "%LOG%" 2>&1
+call :rc
 echo [XONG] Log: %LOG%
 exit /b 0
 
@@ -43,6 +61,6 @@ echo %~1 ...
 exit /b 0
 
 :rc
-echo     exit code = %errorlevel%>> "%LOG%"
+>> "%LOG%" echo     exit code = %errorlevel%
 echo     exit code = %errorlevel%
 exit /b 0

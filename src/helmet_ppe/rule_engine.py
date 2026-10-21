@@ -90,6 +90,8 @@ def evaluate_person(person_id: int, assoc: Association,
         helmet=assoc.helmet,
         no_helmet=assoc.no_helmet,
         flags=flags,
+        source=assoc.person.source,
+        head=assoc.head,
     )
 
 

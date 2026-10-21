@@ -14,16 +14,16 @@ from collections import Counter
 from pathlib import Path
 from typing import Iterable, Sequence
 
-from helmet_ppe.config import HELMET, NO_HELMET, PERSON, PERSON_STATUSES, Status
+from helmet_ppe.config import HELMET, NO_HELMET, PERSON, PERSON_STATUSES, POSE_PERSON, Status
 from helmet_ppe.schemas import ImageResult
 
 DETECTION_FIELDS = [
-    "image_name", "det_id", "class_id", "class_name", "confidence",
-    "x1", "y1", "x2", "y2", "assigned_person_id", "role",
+    "image_name", "det_id", "class_id", "class_name", "source", "confidence",
+    "x1", "y1", "x2", "y2", "assigned_person_id", "role", "keypoints",
 ]
 PERSON_FIELDS = [
-    "image_name", "person_id", "status", "rule_id", "person_confidence",
-    "x1", "y1", "x2", "y2",
+    "image_name", "person_id", "status", "rule_id", "source", "person_confidence",
+    "x1", "y1", "x2", "y2", "head_x1", "head_y1", "head_x2", "head_y2",
     "helmet_det_id", "helmet_confidence", "helmet_match_score", "helmet_evidence",
     "no_helmet_det_id", "no_helmet_confidence", "no_helmet_match_score", "no_helmet_evidence",
     "flags", "reason",
@@ -46,6 +46,8 @@ def detection_rows(result: ImageResult) -> list[dict]:
     roles: dict[int, tuple[int, str]] = {}
     for person in result.persons:
         roles[person.person_det_id] = (person.person_id, "person")
+        if person.person_det_id in result.merged_pose_ids:
+            roles[result.merged_pose_ids[person.person_det_id]] = (person.person_id, "pose_of_person")
         if person.helmet:
             roles[person.helmet.det_id] = (person.person_id, "helmet_of_person")
         if person.no_helmet:
@@ -54,14 +56,17 @@ def detection_rows(result: ImageResult) -> list[dict]:
     rows = []
     for det in result.detections:
         person_id, role = roles.get(det.det_id, ("", "unmatched"))
-        if det.label not in (PERSON, HELMET, NO_HELMET):
+        if det.label not in (PERSON, HELMET, NO_HELMET, POSE_PERSON):
             role = "not_used"
         x1, y1, x2, y2 = det.bbox
+        keypoints = ("" if det.keypoints is None else
+                     json.dumps([[round(v, 1) for v in kp] for kp in det.keypoints],
+                                separators=(",", ":")))
         rows.append({
             "image_name": result.image_name, "det_id": det.det_id, "class_id": det.class_id,
-            "class_name": det.class_name, "confidence": _r(det.confidence),
+            "class_name": det.class_name, "source": det.source, "confidence": _r(det.confidence),
             "x1": _r(x1, 1), "y1": _r(y1, 1), "x2": _r(x2, 1), "y2": _r(y2, 1),
-            "assigned_person_id": person_id, "role": role,
+            "assigned_person_id": person_id, "role": role, "keypoints": keypoints,
         })
     return rows
 
@@ -72,10 +77,13 @@ def person_rows(result: ImageResult) -> list[dict]:
     for p in result.persons:
         x1, y1, x2, y2 = p.bbox
         h, n = p.helmet, p.no_helmet
+        head = p.head_box or ("", "", "", "")
         rows.append({
             "image_name": result.image_name, "person_id": p.person_id, "status": str(p.status),
-            "rule_id": p.rule_id, "person_confidence": _r(p.person_confidence),
+            "rule_id": p.rule_id, "source": p.source, "person_confidence": _r(p.person_confidence),
             "x1": _r(x1, 1), "y1": _r(y1, 1), "x2": _r(x2, 1), "y2": _r(y2, 1),
+            **{f"head_{k}": ("" if v == "" else _r(v, 1))
+               for k, v in zip(("x1", "y1", "x2", "y2"), head)},
             "helmet_det_id": h.det_id if h else "",
             "helmet_confidence": _r(h.confidence) if h else "",
             "helmet_match_score": _r(h.match_score) if h else "",
@@ -133,6 +141,7 @@ def compute_statistics(results: Sequence[ImageResult], num_failed: int,
     person_status = Counter(str(p.status) for r in results for p in r.persons)
     image_status = Counter(str(r.image_status) for r in results)
     det_classes = Counter(d.class_name for r in results for d in r.detections)
+    person_sources = Counter(p.source for r in results for p in r.persons)
     processed = len(results)
     persons_total = sum(person_status.values())
     unknown = person_status.get(str(Status.UNKNOWN), 0)
@@ -141,6 +150,7 @@ def compute_statistics(results: Sequence[ImageResult], num_failed: int,
         "images_processed": processed,
         "images_failed": num_failed,
         "persons_total": persons_total,
+        "persons_by_source": dict(sorted(person_sources.items())),
         "helmet_objects_detected": det_classes.get("helmet", 0),
         "no_helmet_objects_detected": det_classes.get("no_helmet", 0),
         "detections_by_class": dict(sorted(det_classes.items())),

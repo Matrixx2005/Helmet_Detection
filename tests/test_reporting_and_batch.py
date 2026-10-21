@@ -33,7 +33,7 @@ def test_rows_are_consistent_and_not_double_counted():
     scene.person(*box)
     scene.helmet_on(box)
     scene.add("helmet", (800, 650, 880, 720))  # mũ không thuộc ai
-    result = scene.analyze("a.jpg")
+    result = scene.analyze(name="a.jpg")
 
     det_rows = reporting.detection_rows(result)
     assert len(det_rows) == len(result.detections)

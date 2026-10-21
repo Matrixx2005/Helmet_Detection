@@ -1,7 +1,9 @@
 """So sánh kết luận cấp người (persons.csv) với nhãn chuẩn cấp người.
 
-1. Trong từng ảnh, ghép người dự đoán với người chuẩn theo IoU (tham lam,
-   một-một, IoU ≥ ngưỡng).
+1. Trong từng ảnh, ghép người dự đoán với người chuẩn (tham lam, một-một):
+   trước hết theo **hộp đầu** (mũ / đầu trần) khi cả hai bên đều có — mỗi đầu chỉ
+   thuộc một người nên cách này tin cậy hơn trong đám đông; phần còn lại ghép theo
+   IoU khung người ≥ ngưỡng.
 2. Lập ma trận nhầm lẫn: hàng = nhãn chuẩn (HELMET / NO_HELMET /
    UNDETERMINED), cột = dự đoán (HELMET_DETECTED / SUSPECTED_NO_HELMET /
    UNKNOWN / MISSED). Người dự đoán không khớp ai được đếm riêng là
@@ -27,27 +29,43 @@ PRED_COLUMNS = (str(Status.HELMET_DETECTED), str(Status.SUSPECTED_NO_HELMET),
                 str(Status.UNKNOWN), MISSED)
 
 
-def _box(row: dict) -> tuple[float, float, float, float]:
-    return float(row["x1"]), float(row["y1"]), float(row["x2"]), float(row["y2"])
+HEAD_IOU_THRESHOLD = 0.3  # hộp đầu nhỏ nên dùng ngưỡng IoU thấp hơn khung người
 
 
-def match_persons(preds: list[dict], gts: list[dict], iou_threshold: float
-                  ) -> tuple[list[tuple[dict, dict, float]], list[dict], list[dict]]:
-    """Ghép tham lam theo IoU giảm dần. Trả về (cặp khớp, gt bị sót, pred thừa)."""
-    pairs = sorted(
-        ((iou(_box(p), _box(g)), pi, gi)
-         for pi, p in enumerate(preds) for gi, g in enumerate(gts)),
-        reverse=True,
-    )
-    used_p, used_g, matches = set(), set(), []
-    for score, pi, gi in pairs:
-        if score < iou_threshold:
+def _box(row: dict, prefix: str = "") -> tuple[float, float, float, float] | None:
+    keys = [f"{prefix}{k}" for k in ("x1", "y1", "x2", "y2")]
+    if any(row.get(k) in (None, "") for k in keys):
+        return None
+    return tuple(float(row[k]) for k in keys)
+
+
+def _greedy(pairs: list[tuple[float, int, int]], threshold: float, used_p: set, used_g: set,
+            preds: list[dict], gts: list[dict]) -> list[tuple[dict, dict, float]]:
+    matches = []
+    for score, pi, gi in sorted(pairs, reverse=True):
+        if score < threshold:
             break
         if pi in used_p or gi in used_g:
             continue
         used_p.add(pi)
         used_g.add(gi)
         matches.append((preds[pi], gts[gi], score))
+    return matches
+
+
+def match_persons(preds: list[dict], gts: list[dict], iou_threshold: float
+                  ) -> tuple[list[tuple[dict, dict, float]], list[dict], list[dict]]:
+    """Ghép theo hộp đầu, rồi theo khung người. Trả về (cặp khớp, gt bị sót, pred thừa)."""
+    used_p: set[int] = set()
+    used_g: set[int] = set()
+    head_pairs = [(iou(hp, hg), pi, gi)
+                  for pi, p in enumerate(preds) if (hp := _box(p, "head_")) is not None
+                  for gi, g in enumerate(gts) if (hg := _box(g, "head_")) is not None]
+    matches = _greedy(head_pairs, HEAD_IOU_THRESHOLD, used_p, used_g, preds, gts)
+    body_pairs = [(iou(_box(p), _box(g)), pi, gi)
+                  for pi, p in enumerate(preds) if pi not in used_p
+                  for gi, g in enumerate(gts) if gi not in used_g]
+    matches += _greedy(body_pairs, iou_threshold, used_p, used_g, preds, gts)
     missed = [g for gi, g in enumerate(gts) if gi not in used_g]
     extra = [p for pi, p in enumerate(preds) if pi not in used_p]
     return matches, missed, extra

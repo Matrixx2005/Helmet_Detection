@@ -1,0 +1,22 @@
+{
+  "use_pose": false,
+  "conf_pose_person": 0.3,
+  "conf_person": 0.4,
+  "conf_helmet": 0.25,
+  "conf_no_helmet": 0.03,
+  "min_helmet_evidence": 0.1,
+  "min_no_helmet_evidence": 0.02,
+  "margin": 0.0,
+  "head_tolerance_x": 0.9,
+  "head_tolerance_y": 0.55,
+  "min_head_size_ratio": 0.5,
+  "objective": 0.9324,
+  "violation_precision": 0.9556,
+  "violation_recall": 0.9556,
+  "violation_f1": 0.9556,
+  "helmet_precision": 0.9295,
+  "helmet_recall": 0.8896,
+  "helmet_f1": 0.9091,
+  "unknown_rate": 0.0521,
+  "person_recall": 0.8828
+}

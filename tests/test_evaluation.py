@@ -87,7 +87,7 @@ def test_tuning_sweep_reanalyses_saved_detections(tmp_path):
     from factories import FakePipeline, make_images
 
     from helmet_ppe.batch import run_batch
-    from helmet_ppe.evaluation.tuning import sweep
+    from helmet_ppe.evaluation.tuning import SweepGrid, sweep
     from helmet_ppe.image_io import list_images
 
     src = tmp_path / "img"
@@ -97,6 +97,26 @@ def test_tuning_sweep_reanalyses_saved_detections(tmp_path):
     gts = [gt(f"img ({i}).jpg", 1, (5, 10, 25, 60), "HELMET") for i in (1, 2)]
     gts += [gt(f"img ({i}).jpg", 2, (40, 10, 60, 60), "NO_HELMET") for i in (1, 2)]
 
-    table = sweep(tmp_path / "run", gts, confs=[0.5, 0.95], evidences=[0.2], margins=[0.1])
-    assert [row["conf"] for row in table] == [0.5, 0.95]  # conf 0.95 loại hết detection
+    grid = SweepGrid(use_pose=(False,), conf_pose_person=(0.5,),
+                     conf_person=(0.5,), conf_helmet=(0.5, 0.95), conf_no_helmet=(0.5,),
+                     min_helmet_evidence=(0.2,), min_no_helmet_evidence=(0.2,), margin=(0.1,),
+                     suppress_faces_under_helmets=(True,))
+    table = sweep(tmp_path / "run", gts, grid)
+    assert [row["conf_helmet"] for row in table] == [0.5, 0.95]  # 0.95 loại hết mũ (conf 0.9)
     assert table[0]["violation_f1"] == 1.0 and table[0]["helmet_f1"] == 1.0
+    assert table[1]["helmet_recall"] == 0.0
+
+
+def test_naive_baseline_treats_missing_helmet_as_violation(tmp_path):
+    import json
+
+    from helmet_ppe.evaluation.baseline import naive_person_rows
+
+    image = {"image_name": "a.jpg", "detections": [
+        {"class_name": "Person", "bbox": [0, 0, 100, 300]},
+        {"class_name": "Person", "bbox": [200, 0, 300, 300]},
+        {"class_name": "helmet", "bbox": [30, 0, 70, 40]},
+    ]}
+    path = tmp_path / "results.json"
+    path.write_text(json.dumps({"images": [image]}), encoding="utf-8")
+    assert [r["status"] for r in naive_person_rows(path)] == ["HELMET_DETECTED", "SUSPECTED_NO_HELMET"]

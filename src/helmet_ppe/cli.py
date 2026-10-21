@@ -8,6 +8,7 @@ Các lệnh:
     make-person-gt   Sinh nhãn chuẩn cấp người từ nhãn hộp chuẩn.
     tune-rules       Dò ngưỡng confidence / bằng chứng trên tập validation.
     eval-rules       Đánh giá kết luận cấp người so với nhãn chuẩn.
+    compare-rules    Bảng + biểu đồ so sánh nhiều kết quả eval-rules.
 """
 
 from __future__ import annotations
@@ -15,40 +16,81 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import shutil
 import sys
 from pathlib import Path
 
 from helmet_ppe.config import (DEFAULT_MODEL_PATH, DEFAULT_OUTPUT_DIR, PROJECT_ROOT,
-                               DetectorConfig, PipelineConfig, RuleConfig)
+                               AssociationConfig, DetectorConfig, PipelineConfig, RuleConfig)
+from helmet_ppe.evaluation.tuning import SweepGrid
 
 log = logging.getLogger("helmet_ppe")
 
 DEFAULT_DATASET_DIR = PROJECT_ROOT / "data" / "construction-ppe"
 DEFAULT_REPORTS_DIR = PROJECT_ROOT / "reports"
 
+# Tên hiển thị cho các thư mục kết quả do scripts/run_evaluation.bat tạo ra.
+RUN_DISPLAY_NAMES = {
+    "best_untuned": "Ngưỡng chung 0,25",
+    "baseline_naive": "Đối chứng ngây thơ",
+    "best_v2": "best_v2.pt + luật",
+    "best_nopose": "best.pt + luật (không pose)",
+    "best": "best.pt + luật + pose (đề xuất)",
+}
+
 
 # --------------------------------------------------------------------------- helpers
 def _pipeline_config(args: argparse.Namespace) -> PipelineConfig:
+    """Cấu hình từ tham số dòng lệnh; ``--params`` (best_params.json) ghi đè các ngưỡng."""
+    if args.params:
+        tuned = json.loads(Path(args.params).read_text(encoding="utf-8"))
+        for key in ("conf_person", "conf_helmet", "conf_no_helmet", "conf_pose_person",
+                    "min_helmet_evidence", "min_no_helmet_evidence", "margin"):
+            setattr(args, key, tuned[key])
+        args.no_pose = not tuned["use_pose"]
+        association = AssociationConfig(head_tolerance_x=tuned["head_tolerance_x"],
+                                        head_tolerance_y=tuned["head_tolerance_y"],
+                                        min_head_size_ratio=tuned["min_head_size_ratio"],
+                                        suppress_faces_under_helmets=tuned.get(
+                                            "suppress_faces_under_helmets", True))
+    else:
+        association = AssociationConfig()
     return PipelineConfig(
-        detector=DetectorConfig(model_path=str(args.model), conf=args.conf, iou=args.iou,
-                                imgsz=args.imgsz, device=args.device),
-        rules=RuleConfig(min_helmet_evidence=args.min_evidence,
-                         min_no_helmet_evidence=args.min_evidence,
+        detector=DetectorConfig(model_path=str(args.model), conf_person=args.conf_person,
+                                conf_helmet=args.conf_helmet, conf_no_helmet=args.conf_no_helmet,
+                                use_pose=not args.no_pose, pose_model_path=str(args.pose_model),
+                                conf_pose_person=args.conf_pose_person,
+                                iou=args.iou, imgsz=args.imgsz, device=args.device),
+        association=association,
+        rules=RuleConfig(min_helmet_evidence=args.min_helmet_evidence,
+                         min_no_helmet_evidence=args.min_no_helmet_evidence,
                          decision_margin=args.margin),
     )
 
 
 def _add_model_args(parser: argparse.ArgumentParser) -> None:
     det, rules = DetectorConfig(), RuleConfig()
-    parser.add_argument("--model", type=Path, default=DEFAULT_MODEL_PATH, help="Tệp trọng số .pt")
-    parser.add_argument("--conf", type=float, default=det.conf, help="Ngưỡng confidence YOLO")
-    parser.add_argument("--iou", type=float, default=det.iou, help="Ngưỡng IoU của NMS")
-    parser.add_argument("--imgsz", type=int, default=det.imgsz, help="Kích thước ảnh đầu vào")
-    parser.add_argument("--device", default=None, help="cpu, 0 (GPU đầu tiên)…; mặc định tự chọn")
-    parser.add_argument("--min-evidence", type=float, default=rules.min_helmet_evidence,
-                        help="Ngưỡng bằng chứng (confidence × điểm ghép) để kết luận")
-    parser.add_argument("--margin", type=float, default=rules.decision_margin,
-                        help="Chênh lệch tối thiểu giữa bằng chứng mũ và không-mũ")
+    group = parser.add_argument_group("mô hình và ngưỡng (mặc định = giá trị dò trên tập val)")
+    group.add_argument("--model", type=Path, default=DEFAULT_MODEL_PATH, help="Tệp trọng số .pt")
+    group.add_argument("--conf-person", type=float, default=det.conf_person)
+    group.add_argument("--conf-helmet", type=float, default=det.conf_helmet)
+    group.add_argument("--conf-no-helmet", type=float, default=det.conf_no_helmet)
+    group.add_argument("--conf-pose-person", type=float, default=det.conf_pose_person)
+    group.add_argument("--pose-model", type=Path, default=Path(det.pose_model_path),
+                       help="Mô hình pose (COCO) dùng để thêm người và định vị đầu")
+    group.add_argument("--no-pose", action="store_true", default=not det.use_pose,
+                       help="Tắt mô hình pose, chỉ dùng mô hình PPE")
+    group.add_argument("--iou", type=float, default=det.iou, help="Ngưỡng IoU của NMS")
+    group.add_argument("--imgsz", type=int, default=det.imgsz, help="Kích thước ảnh đầu vào")
+    group.add_argument("--device", default=None, help="cpu, 0 (GPU đầu tiên)…; mặc định tự chọn")
+    group.add_argument("--min-helmet-evidence", type=float, default=rules.min_helmet_evidence,
+                       help="Ngưỡng bằng chứng mũ (confidence × điểm ghép)")
+    group.add_argument("--min-no-helmet-evidence", type=float, default=rules.min_no_helmet_evidence,
+                       help="Ngưỡng bằng chứng không-mũ")
+    group.add_argument("--margin", type=float, default=rules.decision_margin,
+                       help="Chênh lệch tối thiểu giữa hai loại bằng chứng")
+    group.add_argument("--params", type=Path, default=None,
+                       help="Nạp các ngưỡng từ best_params.json do lệnh tune-rules tạo ra")
 
 
 def _print_json(data: dict) -> None:
@@ -156,12 +198,21 @@ def cmd_tune_rules(args: argparse.Namespace) -> int:
     from helmet_ppe.evaluation.tuning import sweep
     from helmet_ppe.reporting import write_csv, write_json
 
-    table = sweep(Path(args.run), read_person_gt(Path(args.gt)), confs=args.confs,
-                  evidences=args.evidences, margins=args.margins, iou_threshold=args.iou)
+    def on_off(choice: str) -> tuple[bool, ...]:
+        return (False, True) if choice == "both" else (choice == "on",)
+
+    grid = SweepGrid(use_pose=on_off(args.use_pose), conf_pose_person=args.conf_pose_person,
+                     head_tolerance_x=args.head_tolerance_x, head_tolerance_y=args.head_tolerance_y,
+                     min_head_size_ratio=args.min_head_size_ratio,
+                     suppress_faces_under_helmets=on_off(args.suppress_faces),
+                     conf_person=args.conf_person, conf_helmet=args.conf_helmet,
+                     conf_no_helmet=args.conf_no_helmet, min_helmet_evidence=args.helmet_evidence,
+                     min_no_helmet_evidence=args.no_helmet_evidence, margin=args.margins)
+    table = sweep(Path(args.run), read_person_gt(Path(args.gt)), grid, iou_threshold=args.iou)
     out_dir = Path(args.output)
     write_csv(out_dir / "rule_sweep.csv", table, list(table[0].keys()))
     write_json(out_dir / "best_params.json", table[0])
-    print("Top 5 tổ hợp (sắp theo trung bình F1 của 'vi phạm' và 'đội mũ'):")
+    print(f"Đã thử {len(table)} tổ hợp. Top 5 (theo trung bình F1 'vi phạm' và 'đội mũ'):")
     for row in table[:5]:
         print(row)
     return 0
@@ -175,7 +226,12 @@ def cmd_eval_rules(args: argparse.Namespace) -> int:
     from helmet_ppe.reporting import read_csv, write_csv, write_json
 
     run_dir, out_dir = Path(args.run), Path(args.output)
-    preds = read_csv(run_dir / "persons.csv")
+    if args.baseline:
+        from helmet_ppe.evaluation.baseline import naive_person_rows
+
+        preds = naive_person_rows(run_dir / "results.json")
+    else:
+        preds = read_csv(run_dir / "persons.csv")
     processed = {row["image_name"] for row in read_csv(run_dir / "summary.csv")}
     gts = [g for g in read_person_gt(Path(args.gt)) if g["image_name"] in processed]
     result = evaluate_persons(preds, gts, iou_threshold=args.iou, images=processed)
@@ -195,9 +251,41 @@ def cmd_eval_rules(args: argparse.Namespace) -> int:
          for m in ("precision", "recall", "f1")},
         out_dir / "charts" / "rule_prf.png",
         title="Precision / Recall / F1 của hệ luật", xlabel="Lớp kết luận", ylabel="Giá trị")
-    gallery = build_gallery(cases, gts, run_dir / "annotated_images", out_dir / "error_examples")
-    print(f"Đã lưu {len(gallery)} ảnh minh họa lỗi.")
+    if not args.baseline:  # ảnh đã vẽ là của hệ thống, không minh họa được cho đối chứng
+        gallery_dir = out_dir / "error_examples"
+        shutil.rmtree(gallery_dir, ignore_errors=True)  # chỉ xóa ảnh minh họa do lần trước sinh ra
+        gallery = build_gallery(cases, gts, run_dir / "annotated_images", gallery_dir)
+        print(f"Đã lưu {len(gallery)} ảnh minh họa lỗi.")
     _print_json(result)
+    return 0
+
+
+def cmd_compare_rules(args: argparse.Namespace) -> int:
+    from helmet_ppe import charts
+    from helmet_ppe.reporting import write_csv
+
+    if args.labels and len(args.labels) != len(args.runs):
+        raise ValueError("Số --labels phải bằng số thư mục kết quả")
+    labels = args.labels or [RUN_DISPLAY_NAMES.get(Path(r).name, Path(r).name) for r in args.runs]
+    rows = []
+    for label, run in zip(labels, args.runs):
+        m = json.loads((Path(run) / "rule_metrics.json").read_text(encoding="utf-8"))
+        rows.append({
+            "config": label,
+            **{f"violation_{k}": m["violation"][k] for k in ("precision", "recall", "f1")},
+            **{f"helmet_{k}": m["helmet"][k] for k in ("precision", "recall", "f1")},
+            "unknown_rate": m["unknown_rate_matched"], "decided_accuracy": m["decided_accuracy"],
+        })
+    out_dir = Path(args.output)
+    write_csv(out_dir / "comparison.csv", rows, list(rows[0].keys()))
+    charts.grouped_bar_chart(
+        labels, {name: [r[key] or 0 for r in rows] for name, key in (
+            ("F1 vi phạm", "violation_f1"), ("Precision vi phạm", "violation_precision"),
+            ("Recall vi phạm", "violation_recall"), ("F1 đội mũ", "helmet_f1"))},
+        out_dir / "comparison.png", title="So sánh cấu hình suy luận trên tập test",
+        xlabel="Cấu hình", ylabel="Giá trị")
+    for row in rows:
+        print(row)
     return 0
 
 
@@ -247,13 +335,26 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("tune-rules", help="Dò ngưỡng hệ luật trên tập validation")
     p.add_argument("--run", type=Path, required=True,
-                   help="Kết quả batch trên ảnh val, chạy với --conf thấp (vd. 0.05)")
+                   help="Kết quả batch trên ảnh val, chạy với ngưỡng confidence thấp (vd. 0.02)")
     p.add_argument("--gt", type=Path, required=True, help="CSV nhãn chuẩn cấp người của val")
     p.add_argument("--output", type=Path, default=DEFAULT_REPORTS_DIR / "rule_tuning")
-    p.add_argument("--confs", type=float, nargs="+",
-                   default=[0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.5])
-    p.add_argument("--evidences", type=float, nargs="+", default=[0.1, 0.15, 0.2, 0.25, 0.3, 0.4])
-    p.add_argument("--margins", type=float, nargs="+", default=[0.0, 0.05, 0.1, 0.2])
+    grid = SweepGrid()
+    p.add_argument("--use-pose", choices=["both", "on", "off"], default="both",
+                   help="Thử cả bật và tắt mô hình pose (mặc định), hoặc cố định")
+    p.add_argument("--conf-pose-person", type=float, nargs="+", default=list(grid.conf_pose_person))
+    p.add_argument("--conf-person", type=float, nargs="+", default=list(grid.conf_person))
+    p.add_argument("--conf-helmet", type=float, nargs="+", default=list(grid.conf_helmet))
+    p.add_argument("--conf-no-helmet", type=float, nargs="+", default=list(grid.conf_no_helmet))
+    p.add_argument("--helmet-evidence", type=float, nargs="+", default=list(grid.min_helmet_evidence))
+    p.add_argument("--no-helmet-evidence", type=float, nargs="+",
+                   default=list(grid.min_no_helmet_evidence))
+    p.add_argument("--margins", type=float, nargs="+", default=list(grid.margin))
+    p.add_argument("--suppress-faces", choices=["both", "on", "off"], default="both",
+                   help="Thử bật/tắt bước bỏ hộp no_helmet ngay dưới mũ")
+    p.add_argument("--head-tolerance-x", type=float, nargs="+", default=list(grid.head_tolerance_x))
+    p.add_argument("--head-tolerance-y", type=float, nargs="+", default=list(grid.head_tolerance_y))
+    p.add_argument("--min-head-size-ratio", type=float, nargs="+",
+                   default=list(grid.min_head_size_ratio))
     p.add_argument("--iou", type=float, default=0.5)
     p.set_defaults(func=cmd_tune_rules)
 
@@ -262,7 +363,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--gt", type=Path, required=True, help="CSV nhãn chuẩn cấp người")
     p.add_argument("--output", type=Path, default=DEFAULT_REPORTS_DIR / "rule_eval")
     p.add_argument("--iou", type=float, default=0.5, help="Ngưỡng IoU ghép người dự đoán ↔ chuẩn")
+    p.add_argument("--baseline", action="store_true",
+                   help="Đánh giá luật đối chứng ngây thơ (không thấy mũ = vi phạm) trên cùng detection")
     p.set_defaults(func=cmd_eval_rules)
+    p = sub.add_parser("compare-rules", help="So sánh nhiều kết quả eval-rules")
+    p.add_argument("runs", nargs="+", type=Path, help="Các thư mục chứa rule_metrics.json")
+    p.add_argument("--labels", nargs="+", help="Tên hiển thị cho từng thư mục")
+    p.add_argument("--output", type=Path, default=DEFAULT_REPORTS_DIR / "rule_eval" / "comparison")
+    p.set_defaults(func=cmd_compare_rules)
     return parser
 
 

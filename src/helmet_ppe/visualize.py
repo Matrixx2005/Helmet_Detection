@@ -60,6 +60,10 @@ def draw_result(image: np.ndarray, result: ImageResult) -> np.ndarray:
     for det in result.detections:
         if det.label not in (HELMET, NO_HELMET):
             continue
+        # no_helmet độ tin cậy thấp không thuộc ai không phải bằng chứng → không vẽ cho đỡ rối
+        # (vẫn được ghi trong detections.csv với role = unmatched).
+        if det.label == NO_HELMET and det.det_id in unmatched:
+            continue
         if det.det_id in unmatched:
             color = UNMATCHED_COLOR
         else:
@@ -77,14 +81,19 @@ def draw_result(image: np.ndarray, result: ImageResult) -> np.ndarray:
         text = f"P{person.person_id} {STATUS_SHORT[person.status]} {conf:.2f}"
         _label(canvas, text, int(person.bbox[0]), int(person.bbox[3]), color,
                font_scale, thickness)
-        # Đường nối người → mũ được ghép giúp kiểm tra association bằng mắt.
+        # Điểm đầu ước lượng từ pose (nếu có) và đường nối tới mũ/đầu trần được ghép,
+        # giúp kiểm tra bước association bằng mắt.
+        if person.head is not None:
+            anchor = (int(person.head.cx), int(person.head.cy))
+            cv2.circle(canvas, anchor, max(3, thickness + 2), (255, 255, 255), -1, cv2.LINE_AA)
+            cv2.circle(canvas, anchor, max(3, thickness + 2), color, max(1, thickness - 1), cv2.LINE_AA)
+        else:
+            anchor = (int((person.bbox[0] + person.bbox[2]) / 2),
+                      int(person.bbox[1] + 0.25 * (person.bbox[3] - person.bbox[1])))
         for item in (person.helmet, person.no_helmet):
             if item is not None and item.det_id in by_id:
-                hx = int((item.bbox[0] + item.bbox[2]) / 2)
-                hy = int(item.bbox[3])
-                px = int((person.bbox[0] + person.bbox[2]) / 2)
-                py = int(person.bbox[1] + 0.25 * (person.bbox[3] - person.bbox[1]))
-                cv2.line(canvas, (hx, hy), (px, py), color, 1, cv2.LINE_AA)
+                top = (int((item.bbox[0] + item.bbox[2]) / 2), int(item.bbox[3]))
+                cv2.line(canvas, top, anchor, color, 1, cv2.LINE_AA)
 
     _draw_summary(canvas, result, font_scale, thickness)
     return canvas

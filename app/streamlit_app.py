@@ -40,9 +40,13 @@ st.set_page_config(page_title="Phát hiện mũ bảo hộ", page_icon="⛑️",
 
 # --------------------------------------------------------------------------- tài nguyên
 @st.cache_resource(show_spinner="Đang nạp mô hình YOLO…")
-def load_pipeline(model_path: str, conf: float, imgsz: int) -> HelmetPipeline:
+def load_pipeline(model_path: str, conf_person: float, conf_helmet: float,
+                  conf_no_helmet: float, use_pose: bool, conf_pose_person: float,
+                  imgsz: int) -> HelmetPipeline:
     return HelmetPipeline(PipelineConfig(detector=DetectorConfig(
-        model_path=model_path, conf=conf, imgsz=imgsz)))
+        model_path=model_path, conf_person=conf_person, conf_helmet=conf_helmet,
+        conf_no_helmet=conf_no_helmet, use_pose=use_pose, conf_pose_person=conf_pose_person,
+        imgsz=imgsz)))
 
 
 def to_rgb(image_bgr):
@@ -65,7 +69,7 @@ def persons_table(rows: list[dict]) -> pd.DataFrame:
     df = pd.DataFrame(rows)
     df["Trạng thái"] = df["status"].map(STATUS_VI)
     cols = {"image_name": "Ảnh", "person_id": "Person ID", "Trạng thái": "Trạng thái",
-            "rule_id": "Luật", "person_confidence": "Conf. người",
+            "rule_id": "Luật", "source": "Nguồn", "person_confidence": "Conf. người",
             "helmet_confidence": "Conf. mũ", "helmet_match_score": "Điểm ghép mũ",
             "no_helmet_confidence": "Conf. no_helmet", "reason": "Giải thích"}
     return df[[c for c in cols if c in df.columns]].rename(columns=cols)
@@ -74,17 +78,33 @@ def persons_table(rows: list[dict]) -> pd.DataFrame:
 # --------------------------------------------------------------------------- sidebar
 def sidebar() -> HelmetPipeline | None:
     st.sidebar.header("⚙️ Cài đặt")
-    models = sorted((ROOT / "models").glob("*.pt"))
+    models = sorted(p for p in (ROOT / "models").glob("*.pt") if "pose" not in p.stem)
     if not models:
         st.sidebar.error("Không có mô hình .pt trong thư mục models/")
         return None
     default = next((i for i, m in enumerate(models) if m.name == "best.pt"), 0)
     model = st.sidebar.selectbox("Mô hình", models, index=default, format_func=lambda p: p.name)
-    conf = st.sidebar.slider("Confidence threshold", 0.05, 0.95, 0.25, 0.05)
-    imgsz = st.sidebar.select_slider("Image size", [320, 416, 480, 640, 800, 960, 1280], value=640)
-    st.sidebar.caption("Ngưỡng thấp → phát hiện nhiều hơn nhưng dễ báo nhầm.")
+    defaults = DetectorConfig()
+    st.sidebar.markdown("**Confidence threshold**")
+    conf_person = st.sidebar.slider("Person", 0.05, 0.95, defaults.conf_person, 0.05)
+    conf_helmet = st.sidebar.slider("helmet", 0.05, 0.95, defaults.conf_helmet, 0.05)
+    conf_no_helmet = st.sidebar.slider("no_helmet", 0.01, 0.50, defaults.conf_no_helmet, 0.01)
+    pose_available = Path(defaults.pose_model_path).is_file()
+    use_pose = st.sidebar.toggle("Dùng mô hình pose (ảnh đông người)",
+                                 value=defaults.use_pose and pose_available,
+                                 disabled=not pose_available,
+                                 help="YOLO26n-pose bổ sung người bị che khuất và định vị đầu thật "
+                                      "để không gán nhầm mũ của người đứng phía sau.")
+    conf_pose_person = st.sidebar.slider("Người (pose)", 0.05, 0.95, defaults.conf_pose_person,
+                                         0.05, disabled=not use_pose)
+    imgsz = st.sidebar.select_slider("Image size", [320, 416, 480, 640, 800, 960, 1280],
+                                     value=defaults.imgsz)
+    st.sidebar.caption("Giá trị mặc định được dò trên tập validation. Ngưỡng thấp → phát hiện "
+                       "nhiều hơn nhưng dễ báo nhầm. Lớp no_helmet hiếm nên mô hình cho "
+                       "confidence thấp, cần ngưỡng riêng nhỏ hơn.")
     try:
-        return load_pipeline(str(model), conf, imgsz)
+        return load_pipeline(str(model), conf_person, conf_helmet, conf_no_helmet,
+                             use_pose, conf_pose_person, imgsz)
     except Exception as exc:  # hiển thị lỗi thay vì làm sập ứng dụng
         st.sidebar.error(f"Không nạp được mô hình: {exc}")
         return None

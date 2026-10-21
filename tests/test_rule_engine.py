@@ -1,12 +1,12 @@
 """Kiểm thử hệ luật: các tình huống bắt buộc của đề bài và từng luật R0–R5."""
 
 import pytest
-from factories import Scene
+from factories import TEST_RULES, Scene
 
-from helmet_ppe.config import RuleConfig, Status
+from helmet_ppe.config import DetectorConfig, RuleConfig, Status
 from helmet_ppe.rule_engine import FLAG_SMALL, FLAG_TOP_EDGE, decide
 
-CFG = RuleConfig()
+CFG = TEST_RULES
 
 
 def statuses(result):
@@ -134,3 +134,10 @@ def test_person_ids_start_at_one_and_are_unique():
     for x in (100, 400, 700):
         scene.person(x, 100, x + 150, 600)
     assert [p.person_id for p in scene.analyze().persons] == [1, 2, 3]
+
+
+def test_default_thresholds_are_consistent():
+    det, rules = DetectorConfig(), RuleConfig()
+    assert det.min_conf == min(det.conf_person, det.conf_helmet, det.conf_no_helmet)
+    assert set(det.class_thresholds) == {"person", "helmet", "no_helmet", "pose_person"}
+    assert 0 <= rules.min_no_helmet_evidence <= 1 and 0 <= rules.min_helmet_evidence <= 1

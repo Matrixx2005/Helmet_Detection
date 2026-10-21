@@ -95,7 +95,7 @@ def grouped_bar_chart(groups: Sequence[str], series: Mapping[str, Sequence[float
     ax.set_xticks(x, groups)
     ax.set_ylim(*ylim)
     ax.legend(frameon=False, ncol=min(n_series, 4), loc="upper left",
-              bbox_to_anchor=(0, -0.12))
+              bbox_to_anchor=(0, -0.2))
     _style(ax, title, xlabel, ylabel)
     return _save(fig, path)
 

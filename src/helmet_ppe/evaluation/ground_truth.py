@@ -2,9 +2,11 @@
 
 Định dạng CSV (có thể tự gán nhãn tay bằng Excel)::
 
-    image_name, gt_person_id, x1, y1, x2, y2, gt_status, source
+    image_name, gt_person_id, x1, y1, x2, y2, gt_status, source[, head_x1, head_y1, head_x2, head_y2]
 
-``gt_status`` ∈ {HELMET, NO_HELMET, UNDETERMINED}. Tọa độ theo pixel.
+``gt_status`` ∈ {HELMET, NO_HELMET, UNDETERMINED}. Tọa độ theo pixel. Các cột
+``head_*`` (hộp mũ / đầu trần của người đó) là tùy chọn, dùng để ghép người theo
+đầu khi đánh giá.
 
 Bộ Construction-PPE chỉ có nhãn *hộp* (Person / helmet / no_helmet), không có
 nhãn "người này có đội mũ không". Hàm :func:`derive_person_gt` suy ra nhãn
@@ -27,7 +29,9 @@ from helmet_ppe.pipeline import analyze_detections
 from helmet_ppe.reporting import read_csv, write_csv
 from helmet_ppe.schemas import Detection
 
-GT_FIELDS = ["image_name", "gt_person_id", "x1", "y1", "x2", "y2", "gt_status", "source"]
+GT_FIELDS = ["image_name", "gt_person_id", "x1", "y1", "x2", "y2", "gt_status", "source",
+             "head_x1", "head_y1", "head_x2", "head_y2"]
+REQUIRED_GT_FIELDS = GT_FIELDS[:7]
 GT_HELMET, GT_NO_HELMET, GT_UNDETERMINED = "HELMET", "NO_HELMET", "UNDETERMINED"
 GT_STATUSES = (GT_HELMET, GT_NO_HELMET, GT_UNDETERMINED)
 
@@ -71,11 +75,14 @@ def derive_person_gt(images_dir: Path, labels_dir: Path, names: dict[int, str],
                                     cfg=cfg)
         for person in result.persons:
             x1, y1, x2, y2 = person.bbox
+            head = person.head_box or ("", "", "", "")
             rows.append({
                 "image_name": image_path.name, "gt_person_id": person.person_id,
                 "x1": round(x1, 1), "y1": round(y1, 1), "x2": round(x2, 1), "y2": round(y2, 1),
                 "gt_status": _STATUS_TO_GT[person.status],
                 "source": "derived_from_box_labels",
+                **{f"head_{k}": ("" if v == "" else round(v, 1))
+                   for k, v in zip(("x1", "y1", "x2", "y2"), head)},
             })
     return rows
 
@@ -88,7 +95,7 @@ def read_person_gt(path: Path) -> list[dict]:
     """Đọc và kiểm tra CSV nhãn cấp người."""
     rows = read_csv(path)
     for i, row in enumerate(rows, start=2):
-        missing = [f for f in GT_FIELDS[:7] if f not in row]
+        missing = [f for f in REQUIRED_GT_FIELDS if f not in row]
         if missing:
             raise ValueError(f"{path}: thiếu cột {missing}")
         if row["gt_status"] not in GT_STATUSES:

@@ -1,0 +1,71 @@
+{
+  "iou_threshold": 0.5,
+  "num_images": 141,
+  "gt_persons": 236,
+  "gt_status_counts": {
+    "HELMET": 156,
+    "NO_HELMET": 40,
+    "UNDETERMINED": 40
+  },
+  "pred_persons": 246,
+  "matched_persons": 195,
+  "missed_persons": 41,
+  "false_persons": 51,
+  "false_persons_by_status": {
+    "HELMET_DETECTED": 19,
+    "SUSPECTED_NO_HELMET": 0,
+    "UNKNOWN": 32
+  },
+  "person_detection_recall": 0.8263,
+  "unknown_rate_matched": 0.2667,
+  "decided_accuracy": 1.0,
+  "violation": {
+    "tp": 0,
+    "fp": 0,
+    "fn": 40,
+    "precision": null,
+    "recall": 0.0,
+    "f1": null
+  },
+  "helmet": {
+    "tp": 140,
+    "fp": 19,
+    "fn": 16,
+    "precision": 0.8805,
+    "recall": 0.8974,
+    "f1": 0.8889
+  },
+  "confusion_matrix": {
+    "rows": [
+      "HELMET",
+      "NO_HELMET",
+      "UNDETERMINED"
+    ],
+    "cols": [
+      "HELMET_DETECTED",
+      "SUSPECTED_NO_HELMET",
+      "UNKNOWN",
+      "MISSED"
+    ],
+    "values": [
+      [
+        140,
+        0,
+        6,
+        10
+      ],
+      [
+        0,
+        0,
+        34,
+        6
+      ],
+      [
+        3,
+        0,
+        12,
+        25
+      ]
+    ]
+  }
+}

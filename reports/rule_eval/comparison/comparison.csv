@@ -1,0 +1,6 @@
+﻿config,violation_precision,violation_recall,violation_f1,helmet_precision,helmet_recall,helmet_f1,unknown_rate,decided_accuracy
+"Ngưỡng chung 0,25",,0.0,,0.8805,0.8974,0.8889,0.2667,1.0
+Đối chứng ngây thơ,0.6667,0.8,0.7273,0.8528,0.891,0.8715,0.0,0.9661
+best_v2.pt + luật,0.875,0.7,0.7778,0.8954,0.8782,0.8867,0.1122,0.9763
+best.pt + luật (không pose),0.8537,0.875,0.8642,0.8812,0.9038,0.8924,0.0612,0.9832
+best.pt + luật + pose (đề xuất),0.8537,0.875,0.8642,0.8812,0.9038,0.8924,0.0612,0.9832

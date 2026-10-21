@@ -1,0 +1,16 @@
+﻿split,image_name,train_image,hamming_distance
+val,image12.jpg,image7.jpg,2
+val,image31.jpg,image52.jpg,4
+val,image669.jpg,image690.jpg,5
+val,image885.jpg,image888.jpg,5
+val,image1010.jpg,image1011.jpg,1
+val,image1057.jpg,image1056.jpg,4
+val,image1096.jpg,image1097.jpg,3
+test,image63.jpg,image78.jpg,2
+test,image140.jpg,image915.jpg,4
+test,image708.jpg,image713.jpg,1
+test,image834.jpg,image833.jpg,0
+test,image913.jpg,image912.jpg,2
+test,image927.jpg,image926.jpg,1
+test,image965.jpg,image960.jpg,3
+test,image1003.jpg,image1002.jpg,5

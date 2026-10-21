@@ -13,15 +13,25 @@ from helmet_ppe.config import Status
 from helmet_ppe.geometry import BBox
 
 
+Keypoints = tuple[tuple[float, float, float], ...]  # 17 điểm COCO: (x, y, độ tin cậy)
+
+
 @dataclass(frozen=True)
 class Detection:
-    """Một đối tượng do YOLO phát hiện."""
+    """Một đối tượng do YOLO phát hiện.
+
+    ``source`` cho biết mô hình sinh ra: ``ppe`` (mô hình mũ bảo hộ), ``pose``
+    (mô hình tư thế COCO, lớp ``pose_person``) hoặc ``ppe+pose`` (người đã hợp nhất).
+    ``keypoints`` chỉ có với người từ mô hình pose.
+    """
 
     det_id: int
     class_id: int
     class_name: str
     confidence: float
     bbox: BBox
+    source: str = "ppe"
+    keypoints: Keypoints | None = None
 
     @property
     def label(self) -> str:
@@ -36,7 +46,19 @@ class Detection:
         data = asdict(self)
         data["bbox"] = [round(v, 2) for v in self.bbox]
         data["confidence"] = round(self.confidence, 4)
+        if self.keypoints is not None:
+            data["keypoints"] = [[round(v, 2) for v in kp] for kp in self.keypoints]
         return data
+
+
+@dataclass(frozen=True)
+class HeadEstimate:
+    """Vị trí và kích thước đầu ước lượng từ điểm khớp (pixel)."""
+
+    cx: float
+    cy: float
+    size: float      # xấp xỉ bề rộng đầu
+    method: str      # "face" (mắt/mũi/tai) hoặc "shoulders" (suy từ vai)
 
 
 @dataclass(frozen=True)
@@ -46,10 +68,7 @@ class Candidate:
     person_det_id: int
     object_det_id: int
     score: float
-    rel_x: float
-    rel_y: float
-    width_ratio: float
-    inside_ratio: float
+    method: str      # "head" (theo đầu ước lượng từ pose) hoặc "box" (theo khung người)
 
 
 @dataclass
@@ -74,6 +93,7 @@ class Association:
     person: Detection
     helmet: HeadEvidence | None = None
     no_helmet: HeadEvidence | None = None
+    head: HeadEstimate | None = None
 
 
 @dataclass
@@ -99,6 +119,14 @@ class PersonResult:
     helmet: HeadEvidence | None = None
     no_helmet: HeadEvidence | None = None
     flags: list[str] = field(default_factory=list)
+    source: str = "ppe"
+    head: HeadEstimate | None = None
+
+    @property
+    def head_box(self) -> BBox | None:
+        """Hộp vùng đầu dùng làm bằng chứng (mũ ưu tiên, sau đó no_helmet)."""
+        evidence = self.helmet or self.no_helmet
+        return evidence.bbox if evidence else None
 
     def to_dict(self) -> dict:
         def evidence(item: HeadEvidence | None) -> dict | None:
@@ -123,6 +151,10 @@ class PersonResult:
             "helmet": evidence(self.helmet),
             "no_helmet": evidence(self.no_helmet),
             "flags": list(self.flags),
+            "source": self.source,
+            "head": None if self.head is None else {
+                "cx": round(self.head.cx, 1), "cy": round(self.head.cy, 1),
+                "size": round(self.head.size, 1), "method": self.head.method},
         }
 
 
@@ -139,6 +171,7 @@ class ImageResult:
     image_status: Status | str
     unmatched_helmet_ids: list[int] = field(default_factory=list)
     unmatched_no_helmet_ids: list[int] = field(default_factory=list)
+    merged_pose_ids: dict[int, int] = field(default_factory=dict)  # người PPE → người pose
     inference_ms: float = 0.0
     total_ms: float = 0.0
 
@@ -161,4 +194,5 @@ class ImageResult:
             "persons": [person.to_dict() for person in self.persons],
             "unmatched_helmet_ids": list(self.unmatched_helmet_ids),
             "unmatched_no_helmet_ids": list(self.unmatched_no_helmet_ids),
+            "merged_pose_ids": {str(k): v for k, v in self.merged_pose_ids.items()},
         }

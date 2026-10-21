@@ -39,7 +39,7 @@ class HelmetDetector:
             raise ModelError(f"Không nạp được mô hình {model_path}: {exc}") from exc
 
         self.names: dict[int, str] = {int(k): str(v) for k, v in self.model.names.items()}
-        self.class_ids = self._relevant_class_ids() if self.cfg.only_relevant_classes else None
+        self.class_ids = self._relevant_class_ids()
         log.info("Đã nạp %s (%d lớp)", model_path.name, len(self.names))
 
     def _relevant_class_ids(self) -> list[int]:
@@ -60,7 +60,7 @@ class HelmetDetector:
             return []
         results = self.model.predict(
             source=list(images),
-            conf=self.cfg.conf,
+            conf=self.cfg.min_conf,  # ngưỡng thấp nhất; lọc theo lớp ở fusion.filter_detections
             iou=self.cfg.iou,
             imgsz=self.cfg.imgsz,
             device=self.cfg.device,
@@ -74,13 +74,14 @@ class HelmetDetector:
         return self.detect_batch([image])[0]
 
     def _to_detections(self, result) -> list[Detection]:
+        """Chuyển kết quả Ultralytics thành Detection (lọc theo từng lớp làm ở fusion.py)."""
         boxes = result.boxes
         if boxes is None or len(boxes) == 0:
             return []
         xyxy = boxes.xyxy.cpu().numpy()
         confs = boxes.conf.cpu().numpy()
         classes = boxes.cls.cpu().numpy().astype(int)
-        order = np.argsort(-confs, kind="stable")
+        keep = np.argsort(-confs, kind="stable")
         return [
             Detection(
                 det_id=det_id,
@@ -89,5 +90,5 @@ class HelmetDetector:
                 confidence=float(confs[i]),
                 bbox=to_bbox(xyxy[i]),
             )
-            for det_id, i in enumerate(order)
+            for det_id, i in enumerate(keep)
         ]

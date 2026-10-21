@@ -1,35 +1,72 @@
 """Ghép mũ (helmet) và vùng đầu không mũ (no_helmet) với từng người.
 
-Thuật toán (cho từng loại vật thể vùng đầu, độc lập nhau):
+Mỗi cặp (người, vật thể vùng đầu) được chấm điểm 0..1 theo một trong hai cách:
 
-1. Với mỗi cặp (người, vật thể), tính vị trí tương đối của tâm vật thể trong
-   khung người và loại bỏ cặp vi phạm các điều kiện cứng (gate):
-   tâm nằm ngoài bề ngang người, nằm quá thấp (không còn là vùng đầu — ví dụ
-   mũ cầm trên tay), kích thước không hợp lý, hoặc phần lớn nằm ngoài khung người.
-2. Cặp hợp lệ được chấm điểm 0..1 bằng tổ hợp có trọng số của:
-   độ gần vị trí đầu kỳ vọng theo chiều dọc, độ lệch ngang so với trục người
-   và tỉ lệ diện tích vật thể nằm trong khung người.
-3. Ghép tham lam một-một theo điểm giảm dần: mỗi người tối đa một mũ, mỗi mũ
-   tối đa một người. Khi nhiều người đứng sát nhau, mũ được trao cho người có
-   vùng đầu khớp nhất thay vì cho người được duyệt trước.
+* **Theo đầu (head)** — khi người có điểm khớp từ mô hình pose: vị trí đầu thật
+  được ước lượng từ mắt/mũi/tai (``head.py``). Mũ phải nằm ngay trên đầu đó:
+  tâm mũ phải rơi vào một elip quanh vị trí kỳ vọng (bán trục ngang
+  ``head_tolerance_x·s``, dọc ``head_tolerance_y·s``, với ``s`` là kích thước
+  đầu) và mũ không được nhỏ hơn hẳn đầu. Cách này loại được mũ của người
+  đứng phía sau lọt vào khung người phía trước, và mũ cầm tay.
+* **Theo khung (box)** — khi không có điểm khớp: dùng vị trí tương đối của tâm
+  vật thể trong khung người (vùng đầu ước lượng ở phần trên khung), như sau:
+  loại cặp vi phạm điều kiện cứng (quá thấp, ngoài bề ngang, kích thước bất
+  hợp lý, phần lớn nằm ngoài khung), rồi chấm điểm theo độ gần vị trí đầu kỳ
+  vọng, độ lệch ngang và tỉ lệ nằm trong khung.
+
+Sau đó ghép tham lam một-một theo điểm giảm dần: mỗi người tối đa một mũ, mỗi
+mũ tối đa một người. Mũ và no_helmet được ghép độc lập; hệ luật phân xử nếu một
+người có cả hai.
 """
 
 from __future__ import annotations
 
+import math
 from typing import Iterable
 
 from helmet_ppe import geometry
 from helmet_ppe.config import HELMET, NO_HELMET, PERSON, AssociationConfig
+from helmet_ppe.head import estimate_head
 from helmet_ppe.schemas import (Association, AssociationResult, Candidate,
-                                Detection, HeadEvidence)
+                                Detection, HeadEstimate, HeadEvidence)
 
 
-def score_pair(person: Detection, obj: Detection,
-               cfg: AssociationConfig) -> Candidate | None:
+def score_pair(person: Detection, obj: Detection, cfg: AssociationConfig,
+               head: HeadEstimate | None = None) -> Candidate | None:
     """Chấm điểm việc ``obj`` (mũ / no_helmet) nằm trên đầu ``person``.
 
+    Dùng cách "theo đầu" nếu có ``head``, ngược lại "theo khung".
     Trả về ``None`` nếu cặp không thỏa điều kiện hình học tối thiểu.
     """
+    if head is not None:
+        return _score_by_head(person, obj, head, cfg)
+    return _score_by_box(person, obj, cfg)
+
+
+def _score_by_head(person: Detection, obj: Detection, head: HeadEstimate,
+                   cfg: AssociationConfig) -> Candidate | None:
+    is_helmet = obj.label == HELMET
+    offset = cfg.helmet_head_offset if is_helmet else cfg.no_helmet_head_offset
+    obj_width = geometry.width(obj.bbox)
+    size_ratio = obj_width / head.size
+    # Chuẩn hóa bằng kích thước đầu, nhưng không nhỏ hơn kích thước suy từ chính vật thể
+    # (điểm khớp trên mặt nhỏ thường làm ước lượng đầu bị thiếu).
+    scale = max(head.size, obj_width / (cfg.helmet_to_head_ratio if is_helmet
+                                        else cfg.no_helmet_to_head_ratio))
+    cx, cy = geometry.center(obj.bbox)
+    du = (cx - head.cx) / (cfg.head_tolerance_x * scale)
+    dv = (cy - (head.cy - offset * scale)) / (cfg.head_tolerance_y * scale)
+    distance = math.hypot(du, dv)  # ≤ 1 nghĩa là nằm trong elip chấp nhận
+    if distance > 1.0:
+        return None
+    # Chỉ chặn dưới: ước lượng đầu hay bị thiếu nên mũ "to hơn đầu nhiều lần" vẫn hợp lệ,
+    # còn mũ nhỏ hơn hẳn đầu thì không thể là mũ đang đội trên đầu đó.
+    if size_ratio < cfg.min_head_size_ratio:
+        return None
+    return Candidate(person.det_id, obj.det_id, 1.0 - 0.5 * distance ** 2, "head")
+
+
+def _score_by_box(person: Detection, obj: Detection, cfg: AssociationConfig) -> Candidate | None:
     pw, ph = geometry.width(person.bbox), geometry.height(person.bbox)
     if pw <= 0 or ph <= 0:
         return None
@@ -59,25 +96,19 @@ def score_pair(person: Detection, obj: Detection,
              + cfg.weight_inside * inside)
     score /= cfg.weight_vertical + cfg.weight_horizontal + cfg.weight_inside
 
-    return Candidate(
-        person_det_id=person.det_id,
-        object_det_id=obj.det_id,
-        score=score,
-        rel_x=rel_x,
-        rel_y=rel_y,
-        width_ratio=width_ratio,
-        inside_ratio=inside,
-    )
+    return Candidate(person.det_id, obj.det_id, score, "box")
 
 
 def match_one_to_one(persons: list[Detection], objects: list[Detection],
-                     cfg: AssociationConfig) -> dict[int, Candidate]:
+                     cfg: AssociationConfig,
+                     heads: dict[int, HeadEstimate | None] | None = None) -> dict[int, Candidate]:
     """Ghép tham lam một-một theo điểm giảm dần; trả về person_det_id → Candidate."""
+    heads = heads or {}
     candidates = [
         cand
         for person in persons
         for obj in objects
-        if (cand := score_pair(person, obj, cfg)) is not None
+        if (cand := score_pair(person, obj, cfg, heads.get(person.det_id))) is not None
     ]
     # Sắp xếp ổn định: điểm cao trước; hòa điểm thì ưu tiên id nhỏ (tái lập được).
     ranked = sorted(candidates,
@@ -120,15 +151,17 @@ def associate(detections: list[Detection],
     helmets = _by_label(detections, HELMET)
     no_helmets = _by_label(detections, NO_HELMET)
     by_id = {det.det_id: det for det in detections}
+    heads = {p.det_id: estimate_head(p.keypoints, cfg.keypoint_conf) for p in persons}
 
-    helmet_match = match_one_to_one(persons, helmets, cfg)
-    no_helmet_match = match_one_to_one(persons, no_helmets, cfg)
+    helmet_match = match_one_to_one(persons, helmets, cfg, heads)
+    no_helmet_match = match_one_to_one(persons, no_helmets, cfg, heads)
 
     associations = [
         Association(
             person=person,
             helmet=_evidence(helmet_match.get(person.det_id), by_id),
             no_helmet=_evidence(no_helmet_match.get(person.det_id), by_id),
+            head=heads[person.det_id],
         )
         for person in persons
     ]

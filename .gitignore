@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+.ipynb_checkpoints/
+
+# Dữ liệu và kết quả sinh ra (lớn, tạo lại được)
+data/raw/
+data/processed/
+data/construction-ppe/
+outputs/
+runs/
+logs/
+reports/detection_eval/ultralytics_runs/
+
+# Trọng số mô hình
+models/*.pt
+models/*.onnx
+models/*.xml
+models/*.bin
+*.pt

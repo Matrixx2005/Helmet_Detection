@@ -1,0 +1,14 @@
+[project]
+name = "helmet-ppe"
+version = "1.0.0"
+description = "Phát hiện mũ bảo hộ lao động và suy luận vi phạm bằng hệ luật (YOLO26n)"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110
+src = ["src", "tests"]

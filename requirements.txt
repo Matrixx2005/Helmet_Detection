@@ -1,0 +1,11 @@
+# Cài đặt: .venv\Scripts\python.exe -m pip install -r requirements.txt
+ultralytics>=8.4          # YOLO26 (kéo theo torch, torchvision, opencv-python)
+numpy>=1.26
+opencv-python>=4.9
+pillow>=10.0
+pyyaml>=6.0
+pandas>=2.0
+matplotlib>=3.8
+tqdm>=4.66
+streamlit>=1.50
+pytest>=8.0

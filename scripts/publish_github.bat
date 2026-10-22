@@ -26,7 +26,20 @@ git log --format="%%h %%an %%ad %%s" -20 origin/main >> "%LOG%" 2>&1
 git ls-tree -r --name-only origin/main >> "%LOG%" 2>&1
 >> "%LOG%" echo --- local is ahead of remote?
 git merge-base --is-ancestor origin/main HEAD >> "%LOG%" 2>&1
->> "%LOG%" echo ancestor: %errorlevel%
+if errorlevel 1 goto :merge
+goto :push
+
+:merge
+rem GitHub co lich su khac: gop vao (giu nguyen lich su cu, khong ghi de), dung neu xung dot.
+git merge --no-edit --allow-unrelated-histories -F "%ROOT%\logs\merge_msg.txt" origin/main >> "%LOG%" 2>&1
+if errorlevel 1 (
+    git merge --abort >> "%LOG%" 2>&1
+    >> "%LOG%" echo merge: FAILED
+    goto :fail
+)
+>> "%LOG%" echo merge: 0
+
+:push
 
 echo [4/4] Day len GitHub...
 git push -u origin HEAD:main >> "%LOG%" 2>&1

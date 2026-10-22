@@ -16,7 +16,15 @@ reports/detection_eval/ultralytics_runs/
 
 # Trọng số mô hình
 models/*.pt
+# Đưa trọng số đã huấn luyện lên GitHub để bản Streamlit Cloud chạy được (< 30 MB mỗi tệp)
+!models/best.pt
+!models/best_v2.pt
+!models/yolo26n-pose.pt
 models/*.onnx
 models/*.xml
 models/*.bin
 *.pt
+# Đưa trọng số đã huấn luyện lên GitHub để bản Streamlit Cloud chạy được (< 30 MB mỗi tệp)
+!models/best.pt
+!models/best_v2.pt
+!models/yolo26n-pose.pt

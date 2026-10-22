@@ -154,3 +154,45 @@ Hệ luật thêm **cờ giải thích** cho các ca khó: `small_person` (khung
   trong hầu hết trường hợp thực tế.
 * **Tham số dò trên tập val, báo cáo trên tập test** để tránh "học thuộc" tập
   kiểm tra.
+
+## 3.6. Ảnh đông người và người bị che khuất
+
+Ghép theo khung người (mục 3.3) hoạt động tốt khi người đứng tách nhau, nhưng ảnh
+đông người (người đội mũ đứng xen người không đội, che khuất lẫn nhau) có ba lỗi
+lặp lại:
+
+1. **Mô hình PPE bỏ sót người bị che** — mũ / đầu trần của họ không có ai để ghép.
+2. **Khung người phía trước chứa mũ của người phía sau** — với ghép theo khung,
+   người đầu trần đứng trước bị gán nhầm chiếc mũ phía sau → báo "đội mũ" sai.
+3. Ở ngưỡng confidence thấp, mô hình bắn `no_helmet` vào **khuôn mặt ngay dưới
+   một chiếc mũ** → người đội mũ có thể bị báo nghi vi phạm.
+
+Cách xử lý (không huấn luyện lại YOLO, không đổi dữ liệu):
+
+* **Hợp nhất với mô hình pose** `yolo26n-pose.pt` (huấn luyện sẵn trên COCO, 17
+  điểm khớp). Người pose trùng khung người PPE (IoU ≥ 0,5, ghép một-một) được gộp
+  làm một và nhận thêm điểm khớp; người chỉ có ở mô hình pose được thêm vào
+  (`source = pose`) → giải quyết lỗi 1. Mã: `fusion.fuse_persons`.
+* **Ghép theo đầu thật** khi thấy ít nhất hai điểm trên mặt (mũi, mắt, tai):
+  tâm đầu = trung bình các điểm mặt; kích thước đầu `s` = lớn nhất của (khoảng
+  cách hai tai; 2,4 × hai mắt; 1,2 × mũi–tai). Vì điểm mặt cho `s` hơi nhỏ, dùng
+  `s' = max(s, bề rộng vật thể / k)` (k = 1,8 với mũ, 1,3 với đầu trần). Vật thể
+  được nhận nếu tâm nằm trong elip quanh vị trí kỳ vọng (mũ cao hơn tâm đầu
+  0,6·s', đầu trần 0,3·s'), bán trục 0,9·s' (ngang) và 0,8·s' (dọc), và không
+  nhỏ hơn 0,8·s'. Điểm ghép = 1 − 0,5·d². Không thấy mặt (quay lưng) → quay về
+  ghép theo khung. Mã: `head.estimate_head`, `association._score_by_head`
+  → giải quyết lỗi 2.
+* **Bỏ hộp `no_helmet` nằm ngay dưới mũ**: nếu hộp `no_helmet` chồng ≥ 50 % bề
+  ngang với một hộp `helmet`, tâm của nó thấp hơn đáy mũ, khoảng hở dọc ≤ nửa
+  chiều cao mũ và mũ tin cậy hơn, thì đó là khuôn mặt dưới mũ → loại. Hai hộp
+  chồng khít lên nhau thì *không* loại mà để luật R3 (mâu thuẫn) xử lý. Mã:
+  `fusion.suppress_faces_under_helmets` → giải quyết lỗi 3.
+
+Mọi tham số mới (bật/tắt pose, ngưỡng người pose, hình elip, bật/tắt bước bỏ
+mặt dưới mũ) được dò cùng các ngưỡng cũ trên tập val (mục 5).
+
+**Hạn chế còn lại.** Lớp `no_helmet` của `best.pt` có mAP50 chỉ ~0,11 nên nhiều
+người đầu trần trong đám đông vẫn chỉ được kết luận `UNKNOWN` (không có bằng
+chứng tích cực) — đây là lựa chọn an toàn theo nguyên tắc "không coi không thấy
+mũ là vi phạm". Người *cầm* mũ sát đầu cũng có thể bị đưa về `UNKNOWN`. Muốn
+tăng thêm cần huấn luyện lại / bổ sung dữ liệu `no_helmet` trong đám đông.

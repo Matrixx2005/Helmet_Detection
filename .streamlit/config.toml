@@ -1,0 +1,6 @@
+[server]
+# Giới hạn kích thước mỗi tệp tải lên (MB)
+maxUploadSize = 25
+
+[browser]
+gatherUsageStats = false

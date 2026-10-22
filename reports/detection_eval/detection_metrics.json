@@ -10,10 +10,10 @@
     "mAP50": 0.5191,
     "mAP50-95": 0.2599,
     "speed_ms": {
-      "preprocess": 1.12,
-      "inference": 35.07,
+      "preprocess": 1.02,
+      "inference": 41.5,
       "loss": 0.0,
-      "postprocess": 1.61
+      "postprocess": 2.04
     },
     "per_class": [
       {
@@ -299,10 +299,10 @@
     "mAP50": 0.5081,
     "mAP50-95": 0.2548,
     "speed_ms": {
-      "preprocess": 1.23,
-      "inference": 35.86,
+      "preprocess": 0.96,
+      "inference": 40.07,
       "loss": 0.0,
-      "postprocess": 1.41
+      "postprocess": 2.52
     },
     "per_class": [
       {
@@ -588,10 +588,10 @@
     "mAP50": 0.5095,
     "mAP50-95": 0.241,
     "speed_ms": {
-      "preprocess": 0.86,
-      "inference": 33.62,
+      "preprocess": 1.08,
+      "inference": 44.36,
       "loss": 0.0,
-      "postprocess": 1.58
+      "postprocess": 2.19
     },
     "per_class": [
       {
@@ -877,10 +877,10 @@
     "mAP50": 0.4839,
     "mAP50-95": 0.234,
     "speed_ms": {
-      "preprocess": 0.91,
-      "inference": 33.55,
+      "preprocess": 1.44,
+      "inference": 41.82,
       "loss": 0.0,
-      "postprocess": 1.38
+      "postprocess": 1.85
     },
     "per_class": [
       {

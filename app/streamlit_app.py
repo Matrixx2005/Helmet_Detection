@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import sys
+import tempfile
 import zipfile
 from datetime import datetime
 from pathlib import Path
@@ -34,6 +36,13 @@ STATUS_VI = {
     str(Status.NO_PERSON_DETECTED): "Không có người",
 }
 UPLOAD_TYPES = ["jpg", "jpeg", "png", "webp", "bmp"]
+SAMPLE_DIR = ROOT / "data" / "crowd_samples"
+
+# Chế độ chia sẻ: khi chạy công khai (Streamlit Cloud), người xem không được duyệt
+# thư mục trên máy chủ và số ảnh mỗi lần bị giới hạn. scripts\run_app.bat bật chế độ
+# máy cá nhân bằng biến môi trường HELMET_LOCAL_MODE=1.
+LOCAL_MODE = os.environ.get("HELMET_LOCAL_MODE") == "1"
+MAX_PUBLIC_UPLOADS = 30
 
 st.set_page_config(page_title="Phát hiện mũ bảo hộ", page_icon="⛑️", layout="wide")
 
@@ -111,13 +120,28 @@ def sidebar() -> HelmetPipeline | None:
 
 
 # --------------------------------------------------------------------------- chế độ một ảnh
+def _pick_single_image() -> tuple[bytes, str] | None:
+    """Ảnh người dùng tải lên, hoặc một ảnh mẫu có sẵn trong dự án."""
+    samples = list_images(SAMPLE_DIR) if SAMPLE_DIR.is_dir() else []
+    source = "Tải ảnh lên"
+    if samples:
+        source = st.radio("Nguồn ảnh", ["Tải ảnh lên", "Dùng ảnh mẫu (đám đông)"],
+                          horizontal=True, key="single_source")
+    if source == "Tải ảnh lên":
+        upload = st.file_uploader("Chọn một ảnh", type=UPLOAD_TYPES, key="single")
+        return (upload.getvalue(), upload.name) if upload is not None else None
+    sample = st.selectbox("Ảnh mẫu", samples, format_func=lambda p: p.name)
+    return sample.read_bytes(), sample.name
+
+
 def single_image_tab(pipeline: HelmetPipeline) -> None:
-    upload = st.file_uploader("Chọn một ảnh", type=UPLOAD_TYPES, key="single")
-    if upload is None:
+    picked = _pick_single_image()
+    if picked is None:
         st.info("Tải lên một ảnh công trường để bắt đầu.")
         return
+    data, name = picked
     try:
-        image = decode_image(upload.getvalue(), upload.name)
+        image = decode_image(data, name)
     except ValueError as exc:
         st.error(str(exc))
         return
@@ -127,7 +151,7 @@ def single_image_tab(pipeline: HelmetPipeline) -> None:
     if not st.button("🔍 Phân tích", type="primary"):
         return
 
-    result = pipeline.analyze(image, upload.name)
+    result = pipeline.analyze(image, name)
     right.image(to_rgb(draw_result(image, result)), caption="Kết quả nhận diện", width="stretch")
 
     c = st.columns(5)
@@ -149,11 +173,16 @@ def single_image_tab(pipeline: HelmetPipeline) -> None:
 # --------------------------------------------------------------------------- chế độ nhiều ảnh
 def _collect_inputs() -> tuple[list[Path], list]:
     """Trả về (ảnh trong thư mục có sẵn, ảnh tải lên) — chỉ một trong hai khác rỗng."""
-    source = st.radio("Nguồn ảnh", ["Tải lên nhiều ảnh", "Thư mục có sẵn trên máy"], horizontal=True)
+    sources = ["Tải lên nhiều ảnh"] + (["Thư mục có sẵn trên máy"] if LOCAL_MODE else [])
+    source = st.radio("Nguồn ảnh", sources, horizontal=True)
     if source == "Tải lên nhiều ảnh":
-        uploads = st.file_uploader("Chọn nhiều ảnh", type=UPLOAD_TYPES,
-                                   accept_multiple_files=True, key="multi")
-        return [], list(uploads or [])
+        uploads = list(st.file_uploader("Chọn nhiều ảnh", type=UPLOAD_TYPES,
+                                        accept_multiple_files=True, key="multi") or [])
+        if not LOCAL_MODE and len(uploads) > MAX_PUBLIC_UPLOADS:
+            st.warning(f"Bản chia sẻ chỉ xử lý tối đa {MAX_PUBLIC_UPLOADS} ảnh mỗi lần; "
+                       f"đang lấy {MAX_PUBLIC_UPLOADS} ảnh đầu tiên.")
+            uploads = uploads[:MAX_PUBLIC_UPLOADS]
+        return [], uploads
 
     folder = st.text_input("Đường dẫn thư mục ảnh", str(ROOT / "data" / "test_images"))
     try:
@@ -171,7 +200,10 @@ def batch_tab(pipeline: HelmetPipeline) -> None:
         _show_batch_result()
         return
 
-    out_dir = DEFAULT_OUTPUT_DIR / f"streamlit_{datetime.now():%Y%m%d_%H%M%S}"
+    if LOCAL_MODE:
+        out_dir = DEFAULT_OUTPUT_DIR / f"streamlit_{datetime.now():%Y%m%d_%H%M%S}"
+    else:  # bản chia sẻ: mỗi lượt chạy một thư mục tạm riêng
+        out_dir = Path(tempfile.mkdtemp(prefix="helmet_batch_"))
     if uploads:  # lưu bản sao ảnh tải lên, không đụng tới ảnh gốc của người dùng
         input_dir = out_dir / "inputs"
         input_dir.mkdir(parents=True, exist_ok=True)
@@ -197,7 +229,8 @@ def _show_batch_result() -> None:
     stats = json.loads((out_dir / "results.json").read_text(encoding="utf-8"))["statistics"]
     counts = stats["person_status_counts"]
 
-    st.success(f"Kết quả lưu tại: {out_dir}")
+    st.success(f"Kết quả lưu tại: {out_dir}" if LOCAL_MODE
+               else "Hoàn tất. Tải kết quả ở thẻ \"Tải về\".")
     c = st.columns(6)
     c[0].metric("Ảnh thành công", stats["images_processed"])
     c[1].metric("Ảnh lỗi", stats["images_failed"])

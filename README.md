@@ -89,7 +89,28 @@ bằng chứng, **xám** = mũ / no_helmet không thuộc người nào. Nhãn `
 Mở <http://localhost:8501>. Ba tab: **Một ảnh** (tải ảnh → Phân tích → ảnh kết
 quả, số liệu, bảng từng người), **Nhiều ảnh** (tải nhiều ảnh hoặc nhập đường dẫn
 thư mục → tiến độ → bảng, ảnh kết quả, biểu đồ, tải CSV/JSON/ZIP), **Phương
-pháp** (bảng luật). Thanh bên: chọn mô hình, ngưỡng confidence từng lớp, image size.
+pháp** (bảng luật). Thanh bên: chọn mô hình, ngưỡng confidence từng lớp, bật/tắt
+pose, image size.
+
+### Bản chia sẻ trực tuyến (Streamlit Community Cloud)
+
+Ứng dụng có hai chế độ:
+
+| | Máy cá nhân (`run_app.bat`) | Bản chia sẻ (Streamlit Cloud) |
+|---|---|---|
+| Chọn thư mục ảnh trên máy | Có | **Không** (người xem không duyệt được tệp máy chủ) |
+| Số ảnh mỗi lần (tab Nhiều ảnh) | Không giới hạn | Tối đa 30 |
+| Nơi lưu kết quả | `outputs/streamlit_*` | Thư mục tạm, tải về ở thẻ "Tải về" |
+| Ảnh mẫu đám đông có sẵn | Có | Có |
+
+`run_app.bat` bật chế độ máy cá nhân bằng biến môi trường `HELMET_LOCAL_MODE=1`.
+
+Triển khai: trên <https://share.streamlit.io> chọn **Create app → Deploy a public app
+from GitHub**, repo `Matrixx2005/Helmet_Detection`, nhánh `main`, tệp chính
+`app/streamlit_app.py`; trong *Advanced settings* chọn Python 3.13. Các tệp phục vụ
+triển khai: `app/requirements.txt` (thư viện, PyTorch bản CPU), `packages.txt` (thư
+viện hệ thống cho OpenCV), `.streamlit/config.toml`. Trọng số `models/*.pt` được đưa
+lên GitHub cùng mã nguồn.
 
 ## 5. Đánh giá
 

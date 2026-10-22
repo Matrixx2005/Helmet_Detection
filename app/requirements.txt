@@ -1,0 +1,13 @@
+# Thư viện cho bản chạy trên Streamlit Community Cloud (chỉ CPU).
+# Streamlit Cloud ưu tiên tệp này (cùng thư mục với streamlit_app.py) hơn requirements.txt ở gốc;
+# cài đặt trên máy Windows vẫn dùng requirements.txt ở gốc dự án.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1
+torchvision==0.29.1
+ultralytics==8.4.177
+numpy
+pillow
+pyyaml
+pandas
+matplotlib
+streamlit==1.66.0

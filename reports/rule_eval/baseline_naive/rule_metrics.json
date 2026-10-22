@@ -7,33 +7,33 @@
     "NO_HELMET": 40,
     "UNDETERMINED": 40
   },
-  "pred_persons": 227,
-  "matched_persons": 193,
-  "missed_persons": 43,
-  "false_persons": 34,
+  "pred_persons": 212,
+  "matched_persons": 185,
+  "missed_persons": 51,
+  "false_persons": 27,
   "false_persons_by_status": {
-    "HELMET_DETECTED": 22,
-    "SUSPECTED_NO_HELMET": 12,
+    "HELMET_DETECTED": 16,
+    "SUSPECTED_NO_HELMET": 11,
     "UNKNOWN": 0
   },
-  "person_detection_recall": 0.8178,
+  "person_detection_recall": 0.7839,
   "unknown_rate_matched": 0.0,
-  "decided_accuracy": 0.9661,
+  "decided_accuracy": 0.9706,
   "violation": {
-    "tp": 32,
-    "fp": 16,
-    "fn": 8,
-    "precision": 0.6667,
-    "recall": 0.8,
-    "f1": 0.7273
+    "tp": 30,
+    "fp": 14,
+    "fn": 10,
+    "precision": 0.6818,
+    "recall": 0.75,
+    "f1": 0.7143
   },
   "helmet": {
-    "tp": 139,
-    "fp": 24,
-    "fn": 17,
-    "precision": 0.8528,
-    "recall": 0.891,
-    "f1": 0.8715
+    "tp": 135,
+    "fp": 18,
+    "fn": 21,
+    "precision": 0.8824,
+    "recall": 0.8654,
+    "f1": 0.8738
   },
   "confusion_matrix": {
     "rows": [
@@ -49,22 +49,22 @@
     ],
     "values": [
       [
-        139,
-        4,
+        135,
+        3,
         0,
-        13
+        18
       ],
       [
         2,
-        32,
+        30,
         0,
-        6
+        8
       ],
       [
         4,
-        12,
+        11,
         0,
-        24
+        25
       ]
     ]
   }

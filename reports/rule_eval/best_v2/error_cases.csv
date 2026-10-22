@@ -3,10 +3,8 @@ MISSED_PERSON,image1.jpeg,2,UNDETERMINED,,,,,
 FALSE_PERSON,image10.jpeg,,,4,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
 MISSED_PERSON,image1037.jpeg,3,UNDETERMINED,,,,,
 MISSED_PERSON,image1037.jpeg,6,HELMET,,,,,
-MISSED_PERSON,image1125.jpg,1,UNDETERMINED,,,,,
-MISSED_PERSON,image1125.jpg,2,UNDETERMINED,,,,,
-MISSED_PERSON,image1125.jpg,3,UNDETERMINED,,,,,
 FALSE_PERSON,image1125.jpg,,,1,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+FALSE_PERSON,image1133.jpg,,,1,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
 VIOLATION_AS_UNKNOWN,image1145.jpg,4,NO_HELMET,5,UNKNOWN,R5,0.757,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
 VIOLATION_AS_UNKNOWN,image1145.jpg,1,NO_HELMET,1,UNKNOWN,R5,0.598,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
 VIOLATION_AS_UNKNOWN,image1145.jpg,8,NO_HELMET,7,UNKNOWN,R5,0.54,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
@@ -14,27 +12,37 @@ MISSED_PERSON,image1145.jpg,2,UNDETERMINED,,,,,
 MISSED_PERSON,image1145.jpg,5,UNDETERMINED,,,,,
 MISSED_PERSON,image1145.jpg,6,UNDETERMINED,,,,,
 MISSED_PERSON,image1145.jpg,7,UNDETERMINED,,,,,
-FALSE_PERSON,image1145.jpg,,,2,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.17, không-mũ=0.00)"
-FALSE_PERSON,image1145.jpg,,,3,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+FALSE_PERSON,image1145.jpg,,,2,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+FALSE_PERSON,image1145.jpg,,,3,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.20, không-mũ=0.00)"
 FALSE_PERSON,image1145.jpg,,,6,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
 HELMET_AS_UNKNOWN,image116.jpg,3,HELMET,3,UNKNOWN,R5,0.881,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
-MISSED_PERSON,image1205.jpg,2,NO_HELMET,,,,,
-FALSE_PERSON,image1205.jpg,,,1,UNKNOWN,R4,,"Chỉ có bằng chứng yếu ở vùng đầu, chưa đủ để kết luận. (bằng chứng mũ=0.00, không-mũ=0.02)"
-FALSE_PERSON,image1205.jpg,,,2,SUSPECTED_NO_HELMET,R2,,"Mô hình phát hiện vùng đầu không đội mũ (no_helmet) với bằng chứng đủ mạnh. (bằng chứng mũ=0.00, không-mũ=0.04)"
+VIOLATION_AS_UNKNOWN,image1178.jpg,1,NO_HELMET,1,UNKNOWN,R5,0.718,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+FALSE_PERSON,image1205.jpg,,,1,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+FALSE_PERSON,image1205.jpg,,,2,UNKNOWN,R4,,"Chỉ có bằng chứng yếu ở vùng đầu, chưa đủ để kết luận. (bằng chứng mũ=0.00, không-mũ=0.04)"
+FALSE_PERSON,image1205.jpg,,,5,UNKNOWN,R5,,"Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng. Khung người chạm mép trên, có thể bị cắt mất đầu."
+FALSE_PERSON,image1235.jpg,,,3,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
 VIOLATION_AS_UNKNOWN,image1239.jpg,3,NO_HELMET,3,UNKNOWN,R5,0.739,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
-MISSED_VIOLATION,image1264.jpg,3,NO_HELMET,4,HELMET_DETECTED,R1,0.489,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.25, không-mũ=0.00)"
+VIOLATION_AS_UNKNOWN,image1239.jpg,1,NO_HELMET,1,UNKNOWN,R5,0.612,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+VIOLATION_AS_UNKNOWN,image1239.jpg,2,NO_HELMET,2,UNKNOWN,R4,0.599,"Chỉ có bằng chứng yếu ở vùng đầu, chưa đủ để kết luận. (bằng chứng mũ=0.00, không-mũ=0.05)"
+MISSED_PERSON,image1256.jpg,3,NO_HELMET,,,,,
+FALSE_PERSON,image1256.jpg,,,3,SUSPECTED_NO_HELMET,R2,,"Mô hình phát hiện vùng đầu không đội mũ (no_helmet) với bằng chứng đủ mạnh. (bằng chứng mũ=0.00, không-mũ=0.06)"
 VIOLATION_AS_UNKNOWN,image1264.jpg,1,NO_HELMET,1,UNKNOWN,R5,0.894,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
 VIOLATION_AS_UNKNOWN,image1264.jpg,2,NO_HELMET,3,UNKNOWN,R5,0.72,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
-VIOLATION_AS_UNKNOWN,image1264.jpg,5,NO_HELMET,5,UNKNOWN,R5,0.647,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+VIOLATION_AS_UNKNOWN,image1264.jpg,5,NO_HELMET,6,UNKNOWN,R5,0.647,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+MISSED_PERSON,image1264.jpg,3,NO_HELMET,,,,,
 MISSED_PERSON,image1264.jpg,4,UNDETERMINED,,,,,
 FALSE_PERSON,image1264.jpg,,,2,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+FALSE_PERSON,image1264.jpg,,,4,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+FALSE_PERSON,image1264.jpg,,,5,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.31, không-mũ=0.00)"
+VIOLATION_AS_UNKNOWN,image1270.jpg,2,NO_HELMET,3,UNKNOWN,R5,0.681,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
 MISSED_PERSON,image1270.jpg,1,NO_HELMET,,,,,
-MISSED_PERSON,image1270.jpg,2,NO_HELMET,,,,,
-VIOLATION_AS_UNKNOWN,image1306.jpg,1,NO_HELMET,1,UNKNOWN,R4,0.621,"Chỉ có bằng chứng yếu ở vùng đầu, chưa đủ để kết luận. (bằng chứng mũ=0.00, không-mũ=0.02)"
-FALSE_VIOLATION,image1354.jpg,2,HELMET,2,SUSPECTED_NO_HELMET,R2,0.38,"Mô hình phát hiện vùng đầu không đội mũ (no_helmet) với bằng chứng đủ mạnh. (bằng chứng mũ=0.00, không-mũ=0.02)"
-FALSE_VIOLATION,image1354.jpg,3,HELMET,3,SUSPECTED_NO_HELMET,R2,0.379,"Mô hình phát hiện vùng đầu không đội mũ (no_helmet) với bằng chứng đủ mạnh. (bằng chứng mũ=0.00, không-mũ=0.05)"
-FALSE_VIOLATION,image1354.jpg,1,HELMET,1,SUSPECTED_NO_HELMET,R2,0.676,"Mô hình phát hiện vùng đầu không đội mũ (no_helmet) với bằng chứng đủ mạnh. (bằng chứng mũ=0.00, không-mũ=0.08)"
-DECIDED_ON_UNDETERMINED,image1406.jpg,1,UNDETERMINED,1,SUSPECTED_NO_HELMET,R2,0.825,"Mô hình phát hiện vùng đầu không đội mũ (no_helmet) với bằng chứng đủ mạnh. (bằng chứng mũ=0.00, không-mũ=0.04)"
+FALSE_PERSON,image1270.jpg,,,1,UNKNOWN,R4,,"Chỉ có bằng chứng yếu ở vùng đầu, chưa đủ để kết luận. (bằng chứng mũ=0.00, không-mũ=0.04)"
+FALSE_PERSON,image1270.jpg,,,4,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+FALSE_VIOLATION,image1354.jpg,2,HELMET,3,SUSPECTED_NO_HELMET,R2,0.487,"Mô hình phát hiện vùng đầu không đội mũ (no_helmet) với bằng chứng đủ mạnh. (bằng chứng mũ=0.00, không-mũ=0.05)"
+FALSE_VIOLATION,image1354.jpg,3,HELMET,4,SUSPECTED_NO_HELMET,R2,0.379,"Mô hình phát hiện vùng đầu không đội mũ (no_helmet) với bằng chứng đủ mạnh. (bằng chứng mũ=0.00, không-mũ=0.06)"
+FALSE_VIOLATION,image1354.jpg,1,HELMET,1,SUSPECTED_NO_HELMET,R2,0.676,"Mô hình phát hiện vùng đầu không đội mũ (no_helmet) với bằng chứng đủ mạnh. (bằng chứng mũ=0.00, không-mũ=0.06)"
+FALSE_PERSON,image1354.jpg,,,2,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+DECIDED_ON_UNDETERMINED,image1406.jpg,1,UNDETERMINED,1,SUSPECTED_NO_HELMET,R2,0.825,"Mô hình phát hiện vùng đầu không đội mũ (no_helmet) với bằng chứng đủ mạnh. (bằng chứng mũ=0.00, không-mũ=0.07)"
 FALSE_PERSON,image167.jpg,,,1,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
 MISSED_PERSON,image180.jpg,2,UNDETERMINED,,,,,
 MISSED_PERSON,image182.jpg,1,HELMET,,,,,
@@ -50,44 +58,50 @@ MISSED_PERSON,image182.jpg,10,HELMET,,,,,
 MISSED_PERSON,image182.jpg,11,HELMET,,,,,
 MISSED_PERSON,image182.jpg,12,HELMET,,,,,
 MISSED_PERSON,image182.jpg,13,UNDETERMINED,,,,,
-DECIDED_ON_UNDETERMINED,image324.jpg,5,UNDETERMINED,3,HELMET_DETECTED,R1,0.838,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.25, không-mũ=0.00)"
-MISSED_PERSON,image324.jpg,3,HELMET,,,,,
+FALSE_PERSON,image225.jpg,,,2,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+DECIDED_ON_UNDETERMINED,image324.jpg,6,UNDETERMINED,7,HELMET_DETECTED,R1,0.523,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.21, không-mũ=0.00)"
 MISSED_PERSON,image324.jpg,4,UNDETERMINED,,,,,
-MISSED_PERSON,image324.jpg,6,UNDETERMINED,,,,,
-DECIDED_ON_UNDETERMINED,image361.jpg,1,UNDETERMINED,1,HELMET_DETECTED,R1,0.921,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.63, không-mũ=0.00)"
+FALSE_PERSON,image324.jpg,,,2,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+FALSE_PERSON,image324.jpg,,,3,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+DECIDED_ON_UNDETERMINED,image361.jpg,1,UNDETERMINED,1,HELMET_DETECTED,R1,0.921,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.64, không-mũ=0.00)"
 FALSE_PERSON,image361.jpg,,,2,UNKNOWN,R5,,"Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng. Khung người chạm mép trên, có thể bị cắt mất đầu."
 FALSE_PERSON,image462.jpg,,,3,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
 FALSE_PERSON,image470.jpeg,,,2,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
-FALSE_PERSON,image502.jpg,,,1,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.64, không-mũ=0.00)"
+FALSE_PERSON,image470.jpeg,,,3,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+FALSE_PERSON,image470.jpeg,,,4,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+FALSE_PERSON,image484.jpg,,,2,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+FALSE_PERSON,image502.jpg,,,1,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.69, không-mũ=0.00)"
 HELMET_AS_UNKNOWN,image533.jpg,1,HELMET,2,UNKNOWN,R5,0.741,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
 FALSE_PERSON,image533.jpg,,,1,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.50, không-mũ=0.00)"
-FALSE_PERSON,image533.jpg,,,3,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.46, không-mũ=0.00)"
-FALSE_PERSON,image533.jpg,,,4,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.60, không-mũ=0.00)"
+FALSE_PERSON,image533.jpg,,,3,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.58, không-mũ=0.00)"
+FALSE_PERSON,image533.jpg,,,4,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.67, không-mũ=0.00)"
 MISSED_PERSON,image535.jpg,2,UNDETERMINED,,,,,
 MISSED_PERSON,image536.jpg,2,UNDETERMINED,,,,,
 MISSED_PERSON,image536.jpg,3,UNDETERMINED,,,,,
 MISSED_PERSON,image536.jpg,6,UNDETERMINED,,,,,
-FALSE_PERSON,image536.jpg,,,4,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.62, không-mũ=0.00)"
+FALSE_PERSON,image536.jpg,,,4,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.66, không-mũ=0.00)"
 FALSE_PERSON,image536.jpg,,,6,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
-DECIDED_ON_UNDETERMINED,image537.jpg,1,UNDETERMINED,1,HELMET_DETECTED,R1,0.578,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.60, không-mũ=0.00)"
+DECIDED_ON_UNDETERMINED,image537.jpg,1,UNDETERMINED,1,HELMET_DETECTED,R1,0.578,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.67, không-mũ=0.00)"
 MISSED_PERSON,image537.jpg,2,UNDETERMINED,,,,,
 MISSED_PERSON,image537.jpg,3,UNDETERMINED,,,,,
 MISSED_PERSON,image537.jpg,4,UNDETERMINED,,,,,
-FALSE_PERSON,image537.jpg,,,2,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.42, không-mũ=0.00)"
+FALSE_PERSON,image537.jpg,,,2,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.64, không-mũ=0.00)"
+FALSE_PERSON,image537.jpg,,,3,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.49, không-mũ=0.00)"
 FALSE_PERSON,image538.jpg,,,1,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
-FALSE_PERSON,image538.jpg,,,2,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.36, không-mũ=0.00)"
-FALSE_PERSON,image538.jpg,,,3,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.57, không-mũ=0.00)"
+FALSE_PERSON,image538.jpg,,,2,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.43, không-mũ=0.00)"
+FALSE_PERSON,image538.jpg,,,3,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.66, không-mũ=0.00)"
 FALSE_PERSON,image538.jpg,,,4,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.55, không-mũ=0.00)"
 FALSE_PERSON,image538.jpg,,,5,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.59, không-mũ=0.00)"
-MISSED_PERSON,image548.jpg,1,HELMET,,,,,
+FALSE_PERSON,image548.jpg,,,1,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
 FALSE_PERSON,image550.jpg,,,2,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
 FALSE_PERSON,image612.jpg,,,5,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.29, không-mũ=0.00)"
 MISSED_PERSON,image633.jpg,1,HELMET,,,,,
 DECIDED_ON_UNDETERMINED,image700.jpeg,1,UNDETERMINED,1,HELMET_DETECTED,R1,0.71,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.14, không-mũ=0.00)"
 FALSE_PERSON,image714.jpeg,,,1,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
 FALSE_PERSON,image722.jpeg,,,1,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
-FALSE_PERSON,image796.jpg,,,7,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
+FALSE_PERSON,image796.jpg,,,6,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.53, không-mũ=0.00)"
+FALSE_PERSON,image796.jpg,,,8,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
 FALSE_PERSON,image810.jpg,,,1,UNKNOWN,R5,,Không thấy mũ cũng không thấy no_helmet ở vùng đầu: không đủ bằng chứng.
-FALSE_PERSON,image825.jpg,,,1,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.75, không-mũ=0.00)"
-FALSE_PERSON,image834.jpg,,,1,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.62, không-mũ=0.00)"
-FALSE_PERSON,image846.jpg,,,1,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.29, không-mũ=0.00)"
+FALSE_PERSON,image825.jpg,,,1,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.80, không-mũ=0.00)"
+FALSE_PERSON,image834.jpg,,,1,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.65, không-mũ=0.00)"
+FALSE_PERSON,image846.jpg,,,1,HELMET_DETECTED,R1,,"Có mũ được ghép vào vùng đầu với bằng chứng đủ mạnh. (bằng chứng mũ=0.63, không-mũ=0.00)"

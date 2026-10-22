@@ -27,6 +27,28 @@ def check_app_script() -> None:
     print(f"[OK] AppTest: tiêu đề = {app.title[0].value!r}, số tab = {len(app.tabs)}")
 
 
+def check_sample_analysis() -> None:
+    """Bản chia sẻ: chọn ảnh mẫu, bấm Phân tích, kiểm tra có kết quả và không lộ thư mục máy chủ."""
+    from streamlit.testing.v1 import AppTest
+
+    app = AppTest.from_file(str(APP), default_timeout=300)
+    app.run()
+    sources = [r for r in app.radio if r.key == "single_source"]
+    if not sources:
+        raise RuntimeError("Không thấy lựa chọn ảnh mẫu (thiếu data/crowd_samples?)")
+    sources[0].set_value("Dùng ảnh mẫu (đám đông)").run()
+    next(b for b in app.button if "Phân tích" in b.label).click().run()
+    if app.exception:
+        raise RuntimeError(f"Lỗi khi phân tích ảnh mẫu: {[e.message for e in app.exception]}")
+    metrics = {m.label: m.value for m in app.metric}
+    if "Số người" not in metrics:
+        raise RuntimeError("Không có kết quả phân tích ảnh mẫu")
+    batch_sources = [o for r in app.radio if r.key != "single_source" for o in r.options]
+    if any("Thư mục" in o for o in batch_sources):
+        raise RuntimeError("Bản chia sẻ không được cho chọn thư mục trên máy chủ")
+    print(f"[OK] Ảnh mẫu: {metrics}")
+
+
 def check_server() -> None:
     """Khởi động server headless, gọi endpoint health rồi tắt."""
     cmd = [sys.executable, "-m", "streamlit", "run", str(APP), "--server.headless", "true",
@@ -49,4 +71,5 @@ def check_server() -> None:
 
 if __name__ == "__main__":
     check_app_script()
+    check_sample_analysis()
     check_server()

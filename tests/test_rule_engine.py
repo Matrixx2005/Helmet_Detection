@@ -13,7 +13,7 @@ def statuses(result):
     return [p.status for p in result.persons]
 
 
-# ----------------------------------------------------------- tình huống của đề bài
+# tình huống của đề bài
 def test_one_person_wearing_helmet():
     scene = Scene()
     box = (400, 100, 600, 700)
@@ -92,7 +92,7 @@ def test_image_without_person():
     assert result.image_status == Status.NO_PERSON_DETECTED
 
 
-# ----------------------------------------------------------- từng luật
+# từng luật
 @pytest.mark.parametrize(
     ("helmet", "no_helmet", "expected"),
     [

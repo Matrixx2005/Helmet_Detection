@@ -25,6 +25,44 @@ Mọi số liệu trong báo cáo được đo trên máy của sinh viên:
 `models/best.pt` được giữ nguyên (không ghi đè, không huấn luyện lại).
 `best_v2.pt` là bản sao, chỉ dùng để so sánh.
 
+### Siêu tham số huấn luyện
+
+Hai mô hình được fine-tune (transfer learning) trên Google Colab từ trọng số tiền huấn luyện
+`yolo26n.pt`, dùng bộ dữ liệu Construction-PPE (11 lớp; 1.132 ảnh train, 143 val, 141 test).
+Các giá trị dưới đây đọc từ `train_args` và `train_results` lưu trong từng file `.pt`.
+
+| Tham số | `best.pt` | `best_v2.pt` |
+|---|---|---|
+| Tên lần chạy | `ppe_test` | `helmet_yolo26n_v2` |
+| Epochs cấu hình | 10 | 100 (patience 20) |
+| Epochs thực tế | 10 | 7 (tốt nhất ở epoch 6) |
+| Batch size | 8 | 16 |
+| Kích thước ảnh | 640 | 640 |
+| Optimizer | AdamW | AdamW |
+| lr0 / lrf | 0,000667 / 0,01 | 0,000667 / 0,01 |
+| Momentum / weight decay | 0,937 / 0,0005 | 0,937 / 0,0005 |
+| Warmup epochs / close mosaic | 3 / 10 | 3 / 10 |
+| Trọng số loss (box / cls / dfl) | 7,5 / 0,5 / 1,5 | 7,5 / 0,5 / 1,5 |
+| AMP / seed | Có / 0 | Có / 0 |
+| Phiên bản Ultralytics | 8.4.177 | 8.4.183 |
+
+Tăng cường dữ liệu (giống nhau ở cả hai): mosaic 1,0 · lật ngang 0,5 · HSV (h 0,015; s 0,7; v 0,4) ·
+translate 0,1 · scale 0,5 · random erasing 0,4 · RandAugment.
+
+Kết quả cuối trên tập val:
+
+| Chỉ số | `best.pt` | `best_v2.pt` |
+|---|---|---|
+| Precision | 0,835 | 0,859 |
+| Recall | 0,428 | 0,429 |
+| mAP@50 | 0,519 | 0,508 |
+| mAP@50-95 | 0,259 | 0,241 |
+| Thời gian huấn luyện | ≈ 241 s | ≈ 145 s |
+
+Lưu ý: lần chạy `best_v2` được cấu hình 100 epoch nhưng chỉ có 7 epoch được ghi nhận (dừng sớm
+hoặc bị ngắt). Lần chạy `best` chỉ 10 epoch, bằng đúng `close_mosaic`, nên mosaic bị tắt ngay từ
+đầu; cả hai chưa phải kết quả hội tụ.
+
 ## 5.3. Kịch bản kiểm thử
 
 | # | Kịch bản | Dữ liệu | Lệnh | Đầu ra |

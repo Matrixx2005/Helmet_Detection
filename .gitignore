@@ -28,3 +28,10 @@ models/*.bin
 !models/best.pt
 !models/best_v2.pt
 !models/yolo26n-pose.pt
+
+# Dataset Roboflow tải về và bộ gộp sinh ra (lớn, tạo lại được)
+data/roboflow_*/
+data/ppe-extended/
+data/ppe-train-combined/
+*.zip
+reports/detection_eval_extended/ultralytics_runs/

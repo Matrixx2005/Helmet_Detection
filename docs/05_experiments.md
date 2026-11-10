@@ -17,12 +17,12 @@ Mọi số liệu trong báo cáo được đo trên máy của sinh viên:
 
 | | `models/best.pt` (mô hình chính) | `models/best_v2.pt` (đối chứng) |
 |---|---|---|
-| Nguồn | Mô hình gốc của đề tài | `Downloads\best.pt`, lần huấn luyện `helmet_yolo26n_v2` |
+| Nguồn | Fine-tune từ `yolo26n.pt` trên Colab, lần huấn luyện `ppe_test` | `Downloads\best.pt`, lần huấn luyện `helmet_yolo26n_v2` |
 | Kiến trúc | YOLO26n | YOLO26n |
 | Tham số / GFLOPs | 2.392.165 / 5,4 | 2.392.165 / 5,4 |
 | Kích thước ảnh vào | 640 | 640 |
 
-`models/best.pt` được giữ nguyên (không ghi đè, không huấn luyện lại).
+`models/best.pt` được giữ nguyên trong repo (không bị ghi đè).
 `best_v2.pt` là bản sao, chỉ dùng để so sánh.
 
 ### Siêu tham số huấn luyện

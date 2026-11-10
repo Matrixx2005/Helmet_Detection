@@ -14,8 +14,8 @@ cậy của mọi đối tượng trong ảnh. Hệ thống dùng **YOLO26 Nano*
 | Khối lượng tính toán | 5,4 GFLOPs (ảnh 640×640) |
 | Số lớp đối tượng | 11 (Construction-PPE) |
 
-Mô hình được huấn luyện sẵn (fine-tune từ `yolo26n.pt`) trên Construction-PPE
-— đề tài **không** huấn luyện lại. Hệ thống chỉ dùng 3/11 lớp: `Person` (6),
+Mô hình được fine-tune từ `yolo26n.pt` trên Construction-PPE (Google Colab; tham số ở
+[05_experiments.md](05_experiments.md)). Hệ thống chỉ dùng 3/11 lớp: `Person` (6),
 `helmet` (0) và `no_helmet` (7).
 
 ## 3.2. Bounding box, Confidence và IoU

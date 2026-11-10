@@ -17,7 +17,7 @@
 5. **Đánh giá trung thực**: tham số chọn trên val, báo cáo trên test; ảnh không
    có nhãn chỉ được thống kê, không gắn độ chính xác.
 6. **Sản phẩm dùng được**: CLI, xử lý hàng loạt chịu lỗi từng ảnh, giao diện
-   Streamlit tiếng Việt, 53 test tự động, tài liệu, script `.bat` một-nhấp.
+   Streamlit tiếng Việt, 65 test tự động, tài liệu, script `.bat` một-nhấp.
 
 ## 7.2. Giới hạn của hệ thống
 

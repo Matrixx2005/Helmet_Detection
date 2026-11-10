@@ -1,0 +1,13 @@
+﻿source,split,images,class,instances,precision,recall,mAP50,mAP50-95
+construction-ppe,val,143,helmet,201,0.7689,0.8358,0.8097,0.4301
+construction-ppe,val,143,Person,239,0.7255,0.9163,0.8947,0.4757
+construction-ppe,val,143,no_helmet,45,0.3723,0.3823,0.2828,0.0856
+roboflow_bac_hien,val,157,helmet,275,0.8731,0.7008,0.7635,0.424
+roboflow_bac_hien,val,157,Person,558,0.465,0.3978,0.3257,0.127
+roboflow_bac_hien,val,157,no_helmet,160,0.7294,0.525,0.6029,0.3385
+construction-ppe,test,141,helmet,192,0.8681,0.9219,0.9266,0.5047
+construction-ppe,test,141,Person,236,0.6975,0.8093,0.809,0.4649
+construction-ppe,test,141,no_helmet,40,0.1827,0.15,0.1203,0.0267
+roboflow_bac_hien,test,159,helmet,246,0.843,0.8074,0.8563,0.491
+roboflow_bac_hien,test,159,Person,405,0.785,0.7753,0.8209,0.5388
+roboflow_bac_hien,test,159,no_helmet,144,0.9167,0.7431,0.8425,0.4766

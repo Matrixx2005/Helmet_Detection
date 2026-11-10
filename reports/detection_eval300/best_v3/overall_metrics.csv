@@ -1,0 +1,3 @@
+﻿model_name,split,num_images,precision,recall,mAP50,mAP50-95,inference_ms
+best_v3.pt,val,300,0.5984,0.4777,0.5175,0.2526,86.87
+best_v3.pt,test,300,0.6491,0.5307,0.567,0.2882,98.46

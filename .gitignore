@@ -34,8 +34,8 @@ models/*.bin
 # Dataset Roboflow tải về và bộ gộp sinh ra (lớn, tạo lại được)
 data/roboflow_*/
 data/ppe-extended/
-data/ppe-train-combined/
 *.zip
 reports/detection_eval_extended/ultralytics_runs/
 *.cache
 data_local.yaml
+data/ppe-train-combined/

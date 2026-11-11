@@ -1,0 +1,5 @@
+﻿model,split,mAP50_helmet,mAP50_Person,mAP50_no_helmet,mAP50_3class,mAP50-95_3class,precision_3class,recall_3class
+best,test,0.8087,0.6916,0.1151,0.5385,0.2652,0.8416,0.5053
+best,val,0.7463,0.6906,0.058,0.4983,0.2447,0.9037,0.425
+best_v3,test,0.8906,0.8133,0.7001,0.8013,0.4631,0.769,0.77
+best_v3,val,0.7778,0.4867,0.5291,0.5979,0.3028,0.699,0.5871

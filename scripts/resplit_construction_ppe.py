@@ -31,15 +31,47 @@ from helmet_ppe.image_io import list_images  # noqa: E402
 from helmet_ppe.reporting import write_csv  # noqa: E402
 
 
+def grow_val(ds: Path, args) -> int:
+    """Chuyển ngẫu nhiên ảnh từ train sang val (kèm nhãn) cho đến khi val có ``grow_val_to`` ảnh."""
+    train, val = list_images(ds / "images" / "train"), list_images(ds / "images" / "val")
+    need = args.grow_val_to - len(val)
+    if need <= 0:
+        print(f"Val đã có {len(val)} ảnh (>= {args.grow_val_to}); không làm gì.")
+        return 0
+    chosen = random.Random(args.seed).sample(train, need)
+    test_n = len(list_images(ds / "images" / "test"))
+    print(f"Trước: train {len(train)}, val {len(val)}, test {test_n}")
+    print(f"Sau  : train {len(train) - need}, val {len(val) + need}, test {test_n}")
+    if args.dry_run:
+        return 0
+    rows = []
+    for img in chosen:
+        shutil.move(str(img), str(ds / "images" / "val" / img.name))
+        lbl = ds / "labels" / "train" / f"{img.stem}.txt"
+        if lbl.is_file():
+            shutil.move(str(lbl), str(ds / "labels" / "val" / lbl.name))
+        rows.append({"image": img.name, "old_split": "train", "new_split": "val"})
+    for cache in (ds / "labels").glob("*.cache"):
+        cache.unlink()
+    write_csv(ROOT / "reports" / "construction_ppe_resplit_val.csv", rows, ["image", "old_split", "new_split"])
+    for s in ("train", "val", "test"):
+        print(f"{s}: {len(list_images(ds / 'images' / s))} ảnh")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dataset", type=Path, default=ROOT / "data" / "construction-ppe")
     ap.add_argument("--test-fraction", type=float, default=0.2, help="Tỉ lệ test trong (train + test); 0,2 = 1:4")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--grow-val-to", type=int, default=None,
+                    help="Chỉ chuyển ảnh từ train sang val cho đến khi val đủ N ảnh (giữ nguyên test)")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
     ds = args.dataset
+    if args.grow_val_to is not None:
+        return grow_val(ds, args)
     pool = [(split, p) for split in ("train", "test") for p in list_images(ds / "images" / split)]
     rng = random.Random(args.seed)
     order = list(range(len(pool)))

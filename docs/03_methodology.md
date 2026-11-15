@@ -10,13 +10,13 @@ cậy của mọi đối tượng trong ảnh. Hệ thống dùng **YOLO26 Nano*
 | Thông số (đo được khi nạp `models/best.pt`) | Giá trị |
 |---|---|
 | Số lớp | 121 lớp mạng (sau khi fuse) |
-| Số tham số | 2.392.165 |
+| Số tham số | 2.392.165 (sau fuse; 2.538.746 trước fuse) |
 | Khối lượng tính toán | 5,4 GFLOPs (ảnh 640×640) |
-| Số lớp đối tượng | 11 (Construction-PPE) |
+| Số lớp đối tượng | 11 (Construction-PPE bản 11/2026) |
 
 Mô hình được fine-tune từ `yolo26n.pt` trên Construction-PPE (Google Colab; tham số ở
-[05_experiments.md](05_experiments.md)). Hệ thống chỉ dùng 3/11 lớp: `Person` (6),
-`helmet` (0) và `no_helmet` (7).
+[05_experiments.md](05_experiments.md)). Hệ thống chỉ dùng 3/11 lớp: `Person` (5),
+`helmet` (0) và `no_helmet` (6).
 
 ## 3.2. Bounding box, Confidence và IoU
 
@@ -60,8 +60,8 @@ width_ratio = bề rộng vật thể / w
 
 ### Hiệu chỉnh từ dữ liệu
 
-Các ngưỡng không chọn tùy ý mà được đo trên **nhãn chuẩn** của tập train + val
-Construction-PPE (1.558 mũ, 445 vùng no_helmet):
+Các ngưỡng không chọn tùy ý mà được đo trên **nhãn chuẩn** của tập train + val của
+bản Construction-PPE cũ (1.558 mũ, 445 vùng no_helmet; số liệu đo ở giai đoạn thiết kế, trước khi chia lại tập):
 
 | Đại lượng (mũ nằm trong khung người) | P5 | Trung vị | P95 |
 |---|---|---|---|
@@ -191,7 +191,7 @@ Cách xử lý (không huấn luyện lại YOLO, không đổi dữ liệu):
 Mọi tham số mới (bật/tắt pose, ngưỡng người pose, hình elip, bật/tắt bước bỏ
 mặt dưới mũ) được dò cùng các ngưỡng cũ trên tập val (mục 5).
 
-**Hạn chế còn lại.** Lớp `no_helmet` của `best.pt` có mAP50 chỉ ~0,11 nên nhiều
+**Hạn chế còn lại.** Lớp `no_helmet` của `best.pt` có mAP50 chỉ ~0,06 trên tập đánh giá độc lập nên nhiều
 người đầu trần trong đám đông vẫn chỉ được kết luận `UNKNOWN` (không có bằng
 chứng tích cực) — đây là lựa chọn an toàn theo nguyên tắc "không coi không thấy
 mũ là vi phạm". Người *cầm* mũ sát đầu cũng có thể bị đưa về `UNKNOWN`. Muốn

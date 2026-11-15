@@ -1,19 +1,17 @@
 @echo off
-rem Danh gia day du tren Construction-PPE: YOLO (mAP) + he luat (cap nguoi).
-rem Cach dung: run_evaluation.bat [duong_dan_construction-ppe.zip]
+rem Danh gia day du tren val + test cua Construction-PPE (data\ppe-eval): YOLO (mAP) + he luat (cap nguoi).
+rem Tao data\ppe-eval bang: python scripts\convert_labels_new_scheme.py (xem README).
+rem Cach dung: run_evaluation.bat
 call "%~dp0_env.bat" || exit /b 1
-set "ZIP=%~1"
-if "%ZIP%"=="" set "ZIP=%USERPROFILE%\Downloads\construction-ppe.zip"
-set "DS=data\construction-ppe"
+set "DS=data\ppe-eval"
 set "LOG=%ROOT%\logs\evaluation.log"
 set M="%PY%" -m helmet_ppe
 echo === evaluation %date% %time% > "%LOG%"
 
 set "MODELS=models\best.pt"
-if exist models\best_v2.pt set "MODELS=models\best.pt models\best_v2.pt"
 
-call :title "1. Giai nen dataset"
-%M% prepare-dataset --zip "%ZIP%" --dest %DS% >> "%LOG%" 2>&1
+call :title "1. Tao data_local.yaml cho tap kiem thu"
+"%PY%" -c "from helmet_ppe.evaluation.detection_eval import write_eval_yaml; print(write_eval_yaml(r'%DS%'))" >> "%LOG%" 2>&1
 call :rc
 call :title "2. Danh gia YOLO tren val va test"
 %M% eval-detector --dataset %DS% --models %MODELS% --splits val test >> "%LOG%" 2>&1
@@ -49,7 +47,7 @@ call :title "8. Cau hinh ban dau de so sanh: nguong chung 0.25, chua do nguong"
 %M% eval-rules --run outputs\ppe_test_best_untuned --gt data\person_gt\test_person_gt.csv --output reports\rule_eval\best_untuned >> "%LOG%" 2>&1
 call :rc
 call :title "9. Bang so sanh cac cau hinh tren test"
-%M% compare-rules reports\rule_eval\best_untuned reports\rule_eval\baseline_naive reports\rule_eval\best_v2 reports\rule_eval\best_nopose reports\rule_eval\best --output reports\rule_eval\comparison >> "%LOG%" 2>&1
+%M% compare-rules reports\rule_eval\best_untuned reports\rule_eval\baseline_naive reports\rule_eval\best_nopose reports\rule_eval\best --output reports\rule_eval\comparison >> "%LOG%" 2>&1
 call :rc
 echo [XONG] Log: %LOG%
 exit /b 0

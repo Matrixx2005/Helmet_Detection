@@ -24,8 +24,8 @@ python -m venv .venv                       # bỏ qua nếu đã có .venv
 Hoặc nhấp đúp **`scripts\setup.bat`** (cài thư viện, chuyển code thử nghiệm cũ vào
 `legacy\`, tạo commit Git đầu tiên nếu máy có Git).
 
-Mô hình: `models\best.pt` (bắt buộc, mô hình chính) và `models\best_v2.pt`
-(tùy chọn, mô hình đối chứng).
+Mô hình: `models\best.pt` (YOLO26n, mô hình chính, bắt buộc) và `models\yolo26n-pose.pt`
+(mô hình pose hỗ trợ, bổ sung người bị che khuất và vị trí đầu).
 
 > Mọi lệnh bên dưới chạy từ thư mục gốc dự án và cần `PYTHONPATH=src`. Trong
 > PowerShell: `$env:PYTHONPATH="src"`; trong cmd: `set PYTHONPATH=src`. Các tệp
@@ -114,17 +114,17 @@ lên GitHub cùng mã nguồn.
 
 ## 5. Đánh giá
 
-Cần tệp `construction-ppe.zip` (mặc định tìm ở `%USERPROFILE%\Downloads`).
+Bộ đánh giá `data\ppe-eval\` (val 270 ảnh, test 255 ảnh, định dạng YOLO) **có sẵn trong repo**, nên không cần tải thêm dữ liệu.
 
 ```powershell
-scripts\run_evaluation.bat                       # hoặc: scripts\run_evaluation.bat D:\duong\dan\construction-ppe.zip
+scripts\run_evaluation.bat
 ```
 
 Script thực hiện:
 
-1. `prepare-dataset` – giải nén vào `data\construction-ppe\`, tạo `data_local.yaml`.
-2. `eval-detector` – Precision, Recall, mAP50, mAP50-95, confusion matrix trên val
-   và test → `reports\detection_eval\`.
+1. Tạo `data_local.yaml` cho tập đánh giá.
+2. `eval-detector` – Precision, Recall, mAP50, mAP50-95, confusion matrix trên val và test
+   → `reports\detection_eval\`.
 3. `make-person-gt` – nhãn chuẩn cấp người → `data\person_gt\`.
 4. `tune-rules` – dò ngưỡng trên **val** → `reports\rule_tuning\<model>\best_params.json`.
 5. `batch --params …` + `eval-rules` trên **test** → `reports\rule_eval\<model>\`
@@ -137,38 +137,27 @@ Tự gán nhãn cấp người cho ảnh riêng: tạo CSV với các cột
 (`gt_status` ∈ `HELMET`, `NO_HELMET`, `UNDETERMINED`) rồi chạy
 `python -m helmet_ppe eval-rules --run outputs\experiment_01 --gt <file.csv>`.
 
-### Mở rộng tập val/test bằng dữ liệu Roboflow
+### Về dữ liệu
 
-Dataset Roboflow (định dạng YOLO, tải về và giải nén vào `dataoboflow_<tên>\`) có thể gộp vào
-val/test để kiểm tra khả năng tổng quát hóa. Dữ liệu ảnh **không** nằm trong repo (xem `.gitignore`).
-
-```powershell
-$env:PYTHONPATH="src"
-# 1. Gộp vào val/test (khử trùng với train, ánh xạ lớp, lấy mẫu ~360 ảnh mỗi tập) -> data\ppe-extended.venv\Scripts\python.exe scripts\merge_roboflow.py dataoboflow_bac_hien --limit 360 --split-map valid:val test:test train:test
-# 2. Đánh giá trên tập gộp, rồi riêng từng nguồn
-.venv\Scripts\python.exe -m helmet_ppe eval-detector --dataset data\ppe-extended --models modelsest.pt --output reports\detection_eval_extended
-.venv\Scripts\python.exe scripts\eval_by_source.py
-```
-
-Tên lớp Roboflow được ánh xạ tự động (`head`/`No-Helmet` -> `no_helmet`, `person` -> `Person`,
-`hardhat`/`Helmet` -> `helmet`); đổi bằng `--class-map ten=lop`. Dùng `--dry-run` để xem thống kê trước.
+* **Huấn luyện:** Construction-PPE bản 11/2026 của Ultralytics (1.000 ảnh, 12 lớp): 770 ảnh train, 230 ảnh val.
+* **Đánh giá:** Construction-PPE bản trước (1.416 ảnh) được chia lại, chỉ dùng val 270 / test 255 ảnh
+  (`data\ppe-eval`). Hai phiên bản **không có ảnh nào trùng nhau** nên test không bị rò rỉ từ huấn luyện.
+* Hai phiên bản **đánh số lớp khác nhau** (`Person` là 5 ở bản mới, 6 ở bản cũ); nhãn của bộ đánh giá đã được chuyển sang
+  thứ tự mới bằng `scripts\convert_labels_new_scheme.py`. Chi tiết: [docs/04_dataset.md](docs/04_dataset.md).
 
 ### Huấn luyện lại mô hình (Google Colab)
 
-Mô hình `modelsest.pt` được fine-tune từ `yolo26n.pt` trên Google Colab; tham số huấn luyện
-ghi ở [docs/05_experiments.md](docs/05_experiments.md). Để huấn luyện lại (cần GPU):
+Mô hình `models\best.pt` được fine-tune từ `yolo26n.pt` trên Google Colab; tham số ghi ở
+[docs/05_experiments.md](docs/05_experiments.md). Để huấn luyện lại (cần GPU):
 
-```powershell
-# 1. Ghép train của Construction-PPE + Roboflow (loại ảnh gần trùng val/test) và nén -> data\ppe-train-combined.zip
-.venv\Scripts\python.exe scriptsuild_train_set.py dataoboflow_bac_hien --zip
-```
+1. Mở [notebooks/train_colab.ipynb](notebooks/train_colab.ipynb) trên https://colab.research.google.com, chọn **Runtime →
+   Change runtime type → T4 GPU**, rồi **Run all**. Notebook tự tải dữ liệu, huấn luyện và lưu kết quả vào Drive
+   (`MyDrive/helmet/runs/helmet_yolo26n_ppe/`).
+2. Tải `best.pt` về, sửa tên lớp nếu cần và bỏ optimizer:
+   `python scripts\fix_model_names.py <best.pt tải về> models\best.pt`.
+3. Hoặc chạy trực tiếp: `python scripts/train.py --data <data.yaml> --epochs 100 --batch 16 --device 0`.
 
-2. Tải zip lên Google Drive (`MyDrive/helmet/`), mở [notebooks/train_colab.ipynb](notebooks/train_colab.ipynb)
-   trên Colab (GPU T4) và chạy lần lượt các ô; kết quả (`best.pt`, `results.csv`, `results.png`) được lưu về Drive.
-3. Hoặc chạy trực tiếp: `python scripts/train.py --data <data.yaml> --epochs 100 --batch 16 --device 0`
-   (mặc định dùng bộ Construction-PPE có sẵn của Ultralytics, tự tải).
-
-Tập test không nằm trong gói huấn luyện. Chỉ dùng val để chọn checkpoint và dò ngưỡng; test chỉ để báo cáo.
+Chỉ dùng val để chọn checkpoint và dò ngưỡng; test chỉ để báo cáo.
 
 ## 6. Kiểm thử
 
@@ -192,14 +181,13 @@ helmet-violation-detection/
 ├── src/helmet_ppe/             mã nguồn (xem docs/02_system_architecture.md)
 │   └── evaluation/             đánh giá, nhãn chuẩn, dò ngưỡng, ảnh lỗi
 ├── tests/                      pytest
-├── scripts/                    *.bat cho Windows; train.py, merge_roboflow.py, build_train_set.py, eval_by_source.py
+├── scripts/                    *.bat cho Windows; train.py, fix_model_names.py, convert_labels_new_scheme.py, resplit_construction_ppe.py
 ├── notebooks/                  train_colab.ipynb (huấn luyện trên Google Colab)
 ├── docs/                       tài liệu báo cáo (tiếng Việt)
-├── models/                     best.pt (giữ nguyên), best_v2.pt
+├── models/                     best.pt (YOLO26n, chính), yolo26n-pose.pt (hỗ trợ)
 ├── data/raw, data/test_images  ảnh thử nghiệm (không bị sửa; trùng ảnh Construction-PPE, xem docs/04)
-├── data/construction-ppe/      dataset giải nén (tạo bởi prepare-dataset)
+├── data/ppe-eval/              tập đánh giá val 270 + test 255 ảnh (có trong repo)
 ├── data/person_gt/             nhãn chuẩn cấp người
-├── data/roboflow_*, ppe-extended, ppe-train-combined   dữ liệu Roboflow / bộ gộp (không đưa lên Git)
 ├── outputs/                    kết quả batch
 ├── reports/                    kết quả đánh giá
 ├── legacy/                     code thử nghiệm ban đầu (giữ lại để tham khảo)

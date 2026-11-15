@@ -15,63 +15,57 @@ Mọi số liệu trong báo cáo được đo trên máy của sinh viên:
 
 ## 5.2. Mô hình
 
-| | `models/best.pt` (mô hình chính) | `models/best_v2.pt` (đối chứng) |
+Hệ thống dùng **một mô hình phát hiện chính** và **một mô hình hỗ trợ**:
+
+| | `models/best.pt` (mô hình chính) | `models/yolo26n-pose.pt` (hỗ trợ) |
 |---|---|---|
-| Nguồn | Fine-tune từ `yolo26n.pt` trên Colab, lần huấn luyện `ppe_test` | `Downloads\best.pt`, lần huấn luyện `helmet_yolo26n_v2` |
-| Kiến trúc | YOLO26n | YOLO26n |
-| Tham số / GFLOPs | 2.392.165 / 5,4 | 2.392.165 / 5,4 |
+| Nhiệm vụ | Phát hiện `Person`, `helmet`, `no_helmet` | Phát hiện người + 17 điểm khớp (bổ sung người bị che, định vị đầu) |
+| Nguồn | Fine-tune từ `yolo26n.pt` trên Google Colab (T4) | Ultralytics, huấn luyện sẵn trên COCO, không huấn luyện lại |
+| Kiến trúc | YOLO26n | YOLO26n-pose |
+| Tham số / GFLOPs | 2.538.746 (chưa fuse) · 5,4 GFLOPs | — |
 | Kích thước ảnh vào | 640 | 640 |
 
-`models/best.pt` được giữ nguyên trong repo (không bị ghi đè).
-`best_v2.pt` là bản sao, chỉ dùng để so sánh.
+### Siêu tham số huấn luyện của `best.pt`
 
-### Siêu tham số huấn luyện
+Fine-tune (transfer learning) từ `yolo26n.pt` trên bộ huấn luyện (mục 4.1: 770 ảnh train, 230 ảnh val). Các giá trị đọc
+từ `reports/training/yolo26n/args.yaml` và `results.csv`; notebook `notebooks/train_colab.ipynb`
+(bản đã chạy và kết quả: `reports/training/yolo26n/colab_run_output.ipynb`).
 
-Hai mô hình được fine-tune (transfer learning) trên Google Colab từ trọng số tiền huấn luyện
-`yolo26n.pt`, dùng bộ dữ liệu Construction-PPE (11 lớp; 1.132 ảnh train, 143 val, 141 test).
-Các giá trị dưới đây đọc từ `train_args` và `train_results` lưu trong từng file `.pt`.
+| Tham số | Giá trị |
+|---|---|
+| Epochs cấu hình / thực tế | 100 (patience 20) / 75 (tốt nhất ở epoch 73) |
+| Batch size · kích thước ảnh | 16 · 640 |
+| Optimizer | AdamW (lr0 0,000667; lrf 0,01; momentum 0,937; weight decay 0,0005) |
+| Warmup epochs / close mosaic | 3 / 10 |
+| Trọng số loss (box / cls / dfl) | 7,5 / 0,5 / 1,5 |
+| AMP · seed | Có · 0 |
+| Phần cứng · thời gian | Tesla T4 · khoảng 22 phút (1.333 giây) |
+| Phiên bản Ultralytics | 8.4.212 |
 
-| Tham số | `best.pt` | `best_v2.pt` |
-|---|---|---|
-| Tên lần chạy | `ppe_test` | `helmet_yolo26n_v2` |
-| Epochs cấu hình | 10 | 100 (patience 20) |
-| Epochs thực tế | 10 | 7 (tốt nhất ở epoch 6) |
-| Batch size | 8 | 16 |
-| Kích thước ảnh | 640 | 640 |
-| Optimizer | AdamW | AdamW |
-| lr0 / lrf | 0,000667 / 0,01 | 0,000667 / 0,01 |
-| Momentum / weight decay | 0,937 / 0,0005 | 0,937 / 0,0005 |
-| Warmup epochs / close mosaic | 3 / 10 | 3 / 10 |
-| Trọng số loss (box / cls / dfl) | 7,5 / 0,5 / 1,5 | 7,5 / 0,5 / 1,5 |
-| AMP / seed | Có / 0 | Có / 0 |
-| Phiên bản Ultralytics | 8.4.177 | 8.4.183 |
+Tăng cường dữ liệu: mosaic 1,0 · lật ngang 0,5 · HSV (h 0,015; s 0,7; v 0,4) · translate 0,1 · scale 0,5 ·
+random erasing 0,4 · RandAugment.
 
-Tăng cường dữ liệu (giống nhau ở cả hai): mosaic 1,0 · lật ngang 0,5 · HSV (h 0,015; s 0,7; v 0,4) ·
-translate 0,1 · scale 0,5 · random erasing 0,4 · RandAugment.
+Kết quả ở epoch tốt nhất (tập val 230 ảnh của bộ huấn luyện): Precision 0,860 · Recall 0,773 · mAP@50 **0,819** ·
+mAP@50-95 **0,597**.
 
-Kết quả cuối trên tập val:
+### Hai điều chỉnh sau huấn luyện (ghi lại để minh bạch)
 
-| Chỉ số | `best.pt` | `best_v2.pt` |
-|---|---|---|
-| Precision | 0,835 | 0,859 |
-| Recall | 0,428 | 0,429 |
-| mAP@50 | 0,519 | 0,508 |
-| mAP@50-95 | 0,259 | 0,241 |
-| Thời gian huấn luyện | ≈ 241 s | ≈ 145 s |
-
-Lưu ý: lần chạy `best_v2` được cấu hình 100 epoch nhưng chỉ có 7 epoch được ghi nhận (dừng sớm
-hoặc bị ngắt). Lần chạy `best` chỉ 10 epoch, bằng đúng `close_mosaic`, nên mosaic bị tắt ngay từ
-đầu; cả hai chưa phải kết quả hội tụ.
+1. **Bộ dữ liệu đổi phiên bản.** Khi chạy notebook, tập Construction-PPE trên máy chủ Ultralytics đã là bản 11/2026
+   (12 lớp, thứ tự khác bản cũ). Notebook ban đầu gán tên lớp theo thứ tự cũ nên checkpoint ghi sai tên (ví dụ lớp
+   `Person` thực ra là `no_helmet`). Tên lớp được sửa đúng bằng `scripts/fix_model_names.py` (đồng thời bỏ phần optimizer,
+   từ 26 MB xuống 5,4 MB); trọng số không đổi. Bản gốc từ Colab giữ ở `reports/training/yolo26n/best.pt`.
+2. **Lớp thứ 12 (`no_vest`) không được học.** Mô hình có 11 lớp nên các ảnh có nhãn `no_vest` bị Ultralytics bỏ qua
+   khi huấn luyện. Lớp này nằm ngoài phạm vi đề tài.
 
 ## 5.3. Kịch bản kiểm thử
 
 | # | Kịch bản | Dữ liệu | Lệnh | Đầu ra |
 |---|---|---|---|---|
 | E1 | Kiểm thử đơn vị + tích hợp | dữ liệu giả + `best.pt` | `scripts\run_tests.bat` | `logs/pytest.log` |
-| E2 | Đánh giá phát hiện YOLO | Construction-PPE val (143 ảnh), test (141 ảnh) | `python -m helmet_ppe eval-detector` | `reports/detection_eval/` |
+| E2 | Đánh giá phát hiện YOLO | `data/ppe-eval` val (270 ảnh), test (255 ảnh) | `python -m helmet_ppe eval-detector` | `reports/detection_eval/` |
 | E3 | Dò ngưỡng hệ luật | val, YOLO chạy ở conf 0,02 | `batch` + `tune-rules` | `reports/rule_tuning/<model>/` |
 | E4 | Đánh giá suy luận cấp người | test, ngưỡng từ E3 | `batch --params` + `eval-rules` | `reports/rule_eval/<model>/` |
-| E5 | Xử lý hàng loạt | `data/raw` (29 ảnh; trùng ảnh Construction-PPE, xem 4.6) | `python -m helmet_ppe batch` | `outputs/experiment_01/` |
+| E5 | Xử lý hàng loạt | `data/raw` (29 ảnh; trùng ảnh bộ đánh giá, xem 4.6) | `python -m helmet_ppe batch` | `outputs/experiment_01/` |
 | E6 | Giao diện | — | `scripts/check_streamlit.py` | `logs/streamlit_check.log` |
 | E7 | So sánh cấu hình (ablation) | test | `eval-rules --baseline`, `compare-rules` | `reports/rule_eval/comparison/` |
 
@@ -110,20 +104,18 @@ Suy ra từ nhãn hộp chuẩn (mục 4.5). Người dự đoán được ghép
 IoU ≥ 0,5 (tham lam một-một).
 
 ### Dò ngưỡng (E3) — chỉ trên tập val
-1. Chạy YOLO trên 143 ảnh val với ngưỡng 0,02 cho cả ba lớp, lưu mọi detection.
-2. Thử **1.792 tổ hợp**: `conf_person` ∈ {0,25; 0,3; 0,4; 0,5},
-   `conf_helmet` ∈ {0,2; 0,25; 0,3; 0,4},
-   `conf_no_helmet` ∈ {0,02; 0,03; 0,05; 0,08; 0,1; 0,15; 0,25},
-   ngưỡng bằng chứng mũ ∈ {0,1; 0,2}, ngưỡng bằng chứng không-mũ ∈ {0; 0,02; 0,03; 0,05},
-   biên ∈ {0; 0,1}.
+1. Chạy YOLO trên 270 ảnh val với ngưỡng 0,02 cho cả ba lớp, lưu mọi detection.
+2. Thử **5.184 tổ hợp** (lưới `SweepGrid` trong `helmet_ppe/evaluation/tuning.py`): bật/tắt pose,
+   `conf_pose_person` ∈ {0,3; 0,4; 0,5}, `conf_person` ∈ {0,3; 0,4; 0,5}, `conf_helmet` ∈ {0,2; 0,25; 0,3},
+   `conf_no_helmet` ∈ {0,02; 0,03; 0,05; 0,1}, ngưỡng bằng chứng không-mũ ∈ {0; 0,02; 0,05} (bằng chứng mũ cố định 0,1,
+   biên 0), dung sai đầu x ∈ {0,9; 1,2}, y ∈ {0,55; 0,8}, tỉ lệ kích thước đầu tối thiểu ∈ {0,5; 0,8}, bật/tắt bước bỏ
+   hộp `no_helmet` dưới mũ.
 3. Hàm mục tiêu: trung bình F1 của lớp "vi phạm" và lớp "đội mũ". Khi hòa, chọn
    ngưỡng cao hơn (thận trọng hơn).
 4. Tham số tốt nhất ghi vào `best_params.json`, dùng **nguyên vẹn** cho tập test.
 
-Lý do phải dò ngưỡng theo lớp: ở ngưỡng chung 0,25, mô hình **không trả về hộp
-`no_helmet` nào** trên tập test (recall lớp này = 0, mục 6.1) nên hệ luật không
-bao giờ có bằng chứng vi phạm. Lớp này hiếm (400 hộp train so với 1.357 `helmet`)
-nên confidence của mô hình thấp một cách có hệ thống.
+Lý do phải dò ngưỡng theo lớp: lớp `no_helmet` có confidence thấp một cách có hệ thống (mAP50 test 0,058, mục 6.1);
+với ngưỡng chung 0,25 hệ thống bỏ sót gần một nửa số vi phạm (recall 0,532, mục 6.4).
 
 ### Chỉ số cấp người (E4)
 * **Precision / Recall / F1** cho lớp *vi phạm* (`NO_HELMET` ↔ `SUSPECTED_NO_HELMET`)
@@ -143,5 +135,5 @@ chính xác: thư mục không có nhãn đi kèm và các ảnh trùng với Co
 Trên cùng tập test và cùng nhãn chuẩn, so sánh: (a) `best.pt` với ngưỡng chung
 0,25 và luật mặc định ban đầu (chưa dò); (b) luật đối chứng ngây thơ "tâm mũ nằm
 trong khung người → đội mũ, ngược lại → vi phạm" chạy trên chính các detection của
-hệ thống (`helmet_ppe/evaluation/baseline.py`); (c) `best_v2.pt` với ngưỡng dò
-riêng trên val; (d) hệ thống đề xuất.
+hệ thống (`helmet_ppe/evaluation/baseline.py`); (c) hệ thống **không dùng pose** với
+ngưỡng dò riêng trên val; (d) hệ thống đề xuất (có pose).

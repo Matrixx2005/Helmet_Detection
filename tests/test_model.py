@@ -12,8 +12,8 @@ pytest.importorskip("ultralytics")
 pytestmark = pytest.mark.skipif(not DEFAULT_MODEL_PATH.is_file(),
                                 reason="Không có models/best.pt")
 
-EXPECTED_CLASSES = {0: "helmet", 1: "gloves", 2: "vest", 3: "boots", 4: "goggles", 5: "none",
-                    6: "Person", 7: "no_helmet", 8: "no_goggle", 9: "no_gloves", 10: "no_boots"}
+EXPECTED_CLASSES = {0: "helmet", 1: "gloves", 2: "vest", 3: "boots", 4: "goggles", 5: "Person",
+                    6: "no_helmet", 7: "no_goggle", 8: "no_gloves", 9: "no_boots", 10: "forklift"}
 
 
 @pytest.fixture(scope="module")
@@ -25,7 +25,7 @@ def pipeline():
 
 def test_model_has_expected_classes(pipeline):
     assert pipeline.detector.names == EXPECTED_CLASSES
-    assert sorted(pipeline.detector.class_ids) == [0, 6, 7]
+    assert sorted(pipeline.detector.class_ids) == [0, 5, 6]
 
 
 def test_pose_model_returns_keypoints(pipeline):

@@ -1,6 +1,6 @@
 """Huấn luyện (fine-tune) YOLO26n trên bộ dữ liệu Construction-PPE.
 
-Tái lập lần huấn luyện đã tạo ``models/best_v2.pt``. Các siêu tham số lấy từ
+Tái lập quy trình huấn luyện của ``models/best.pt``. Các siêu tham số lấy từ
 ``train_args`` lưu trong chính tệp trọng số (xem docs/05_experiments.md).
 Ban đầu mô hình được huấn luyện trên Google Colab (GPU); script này chạy được cả
 trên Colab lẫn máy cá nhân.

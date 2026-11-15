@@ -50,7 +50,7 @@ class DetectorConfig:
 
     model_path: str = str(DEFAULT_MODEL_PATH)
     conf_person: float = 0.50
-    conf_helmet: float = 0.30
+    conf_helmet: float = 0.20
     conf_no_helmet: float = 0.05
     iou: float = 0.7
     imgsz: int = 640
@@ -59,7 +59,7 @@ class DetectorConfig:
     # đông và cho vị trí đầu thật (mắt, mũi, tai) để ghép mũ chính xác hơn.
     use_pose: bool = True
     pose_model_path: str = str(DEFAULT_POSE_MODEL_PATH)
-    conf_pose_person: float = 0.30
+    conf_pose_person: float = 0.40
 
     @property
     def class_thresholds(self) -> dict[str, float]:
@@ -104,7 +104,7 @@ class AssociationConfig:
     keypoint_conf: float = 0.5        # điểm khớp có độ tin cậy thấp hơn bị bỏ qua
     helmet_head_offset: float = 0.6
     no_helmet_head_offset: float = 0.3
-    head_tolerance_x: float = 0.9     # bán trục ngang của elip (đơn vị s)
+    head_tolerance_x: float = 1.2     # bán trục ngang của elip (đơn vị s)
     head_tolerance_y: float = 0.8     # bán trục dọc của elip (đơn vị s)
     min_head_size_ratio: float = 0.8  # mũ/đầu nhỏ hơn 0,8·s: không phải của đầu này
     # Điểm khớp trên mặt nhỏ nên s hay bị ước lượng thiếu: dùng s' = max(s, bề rộng vật thể / k)

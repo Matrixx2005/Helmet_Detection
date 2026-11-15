@@ -1,39 +1,39 @@
 {
   "iou_threshold": 0.5,
-  "num_images": 141,
-  "gt_persons": 236,
+  "num_images": 255,
+  "gt_persons": 373,
   "gt_status_counts": {
-    "HELMET": 156,
-    "NO_HELMET": 40,
-    "UNDETERMINED": 40
+    "HELMET": 241,
+    "NO_HELMET": 79,
+    "UNDETERMINED": 53
   },
-  "pred_persons": 246,
-  "matched_persons": 195,
-  "missed_persons": 41,
-  "false_persons": 51,
+  "pred_persons": 358,
+  "matched_persons": 290,
+  "missed_persons": 83,
+  "false_persons": 68,
   "false_persons_by_status": {
-    "HELMET_DETECTED": 19,
-    "SUSPECTED_NO_HELMET": 0,
-    "UNKNOWN": 32
+    "HELMET_DETECTED": 13,
+    "SUSPECTED_NO_HELMET": 7,
+    "UNKNOWN": 48
   },
-  "person_detection_recall": 0.8263,
-  "unknown_rate_matched": 0.2667,
-  "decided_accuracy": 1.0,
+  "person_detection_recall": 0.7775,
+  "unknown_rate_matched": 0.1414,
+  "decided_accuracy": 0.9576,
   "violation": {
-    "tp": 0,
-    "fp": 0,
-    "fn": 40,
-    "precision": null,
-    "recall": 0.0,
-    "f1": null
+    "tp": 42,
+    "fp": 9,
+    "fn": 37,
+    "precision": 0.8235,
+    "recall": 0.5316,
+    "f1": 0.6461
   },
   "helmet": {
-    "tp": 140,
-    "fp": 19,
-    "fn": 16,
-    "precision": 0.8805,
-    "recall": 0.8974,
-    "f1": 0.8889
+    "tp": 184,
+    "fp": 21,
+    "fn": 57,
+    "precision": 0.8976,
+    "recall": 0.7635,
+    "f1": 0.8251
   },
   "confusion_matrix": {
     "rows": [
@@ -49,22 +49,22 @@
     ],
     "values": [
       [
-        140,
-        0,
-        6,
-        10
+        184,
+        2,
+        23,
+        32
       ],
       [
-        0,
-        0,
-        34,
-        6
+        8,
+        42,
+        13,
+        16
       ],
       [
         3,
-        0,
-        12,
-        25
+        10,
+        5,
+        35
       ]
     ]
   }

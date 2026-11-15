@@ -27,13 +27,13 @@ FIGURES = {
     "outputs/experiment_01/charts/image_status_distribution.png": "exp01_image_status.png",
     "outputs/experiment_01/charts/images_success_failure.png": "exp01_success_failure.png",
     "outputs/experiment_01/charts/inference_time.png": "exp01_inference_time.png",
-    "outputs/ppe_test_best/annotated_images/image611.jpg": "example_all_helmets.jpg",
-    "outputs/ppe_test_best/annotated_images/image1239.jpg": "example_no_helmet.jpg",
+    "outputs/ppe_test_best/annotated_images/image100.jpg": "example_all_helmets.jpg",
+    "outputs/ppe_test_best/annotated_images/image1148.jpg": "example_no_helmet.jpg",
     "outputs/experiment_01/annotated_images/anh_ct_nh (3).jpg": "example_raw_no_helmet.jpg",
-    "reports/rule_eval/best/error_examples/FALSE_VIOLATION/image1354.jpg":
+    "reports/rule_eval/best/error_examples/FALSE_VIOLATION/image111.jpg":
         "error_false_violation.jpg",
-    "reports/rule_eval/best/error_examples/FALSE_PERSON/image1145.jpg": "error_box_mismatch.jpg",
-    "reports/rule_eval/best/error_examples/MISSED_PERSON/image116.jpg": "error_missed_person.jpg",
+    "reports/rule_eval/best/error_examples/FALSE_PERSON/image1024.jpeg": "error_false_person.jpg",
+    "reports/rule_eval/best/error_examples/MISSED_PERSON/image1.jpeg": "error_missed_person.jpg",
 }
 
 

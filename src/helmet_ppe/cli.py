@@ -33,7 +33,6 @@ DEFAULT_REPORTS_DIR = PROJECT_ROOT / "reports"
 RUN_DISPLAY_NAMES = {
     "best_untuned": "Ngưỡng chung 0,25",
     "baseline_naive": "Đối chứng ngây thơ",
-    "best_v2": "best_v2.pt + luật",
     "best_nopose": "best.pt + luật (không pose)",
     "best": "best.pt + luật + pose (đề xuất)",
 }

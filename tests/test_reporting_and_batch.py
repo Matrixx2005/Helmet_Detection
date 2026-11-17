@@ -16,7 +16,7 @@ from helmet_ppe.visualize import draw_result
 def test_list_images_filters_extensions_and_sorts_naturally(tmp_path):
     make_images(tmp_path, 3)
     write_image(tmp_path / "x.png", np.zeros((10, 10, 3), np.uint8))
-    (tmp_path / "notes.txt").write_text("không phải ảnh")
+    (tmp_path / "notes.txt").write_text("không phải ảnh", encoding="utf-8")
     names = [p.name for p in list_images(tmp_path)]
     assert names == ["img (1).jpg", "img (2).jpg", "img (3).jpg", "x.png"]
 

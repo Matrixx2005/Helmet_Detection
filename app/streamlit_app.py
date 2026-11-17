@@ -6,6 +6,7 @@ Chạy:  streamlit run app/streamlit_app.py
 from __future__ import annotations
 
 import io
+import hashlib
 import json
 import os
 import sys
@@ -15,6 +16,7 @@ from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
 import cv2  # noqa: E402
@@ -28,6 +30,8 @@ from helmet_ppe.pipeline import HelmetPipeline  # noqa: E402
 from helmet_ppe.reporting import person_rows, read_csv  # noqa: E402
 from helmet_ppe.rule_engine import RULE_DESCRIPTIONS  # noqa: E402
 from helmet_ppe.visualize import draw_result  # noqa: E402
+from app.demo_views import show_demo_result, show_result_overview, show_status_metrics  # noqa: E402
+from app.comparison_views import comparison_tab  # noqa: E402
 
 STATUS_VI = {
     str(Status.HELMET_DETECTED): "Đội mũ",
@@ -44,7 +48,8 @@ SAMPLE_DIR = ROOT / "data" / "crowd_samples"
 LOCAL_MODE = os.environ.get("HELMET_LOCAL_MODE") == "1"
 MAX_PUBLIC_UPLOADS = 30
 
-st.set_page_config(page_title="Phát hiện mũ bảo hộ", page_icon="⛑️", layout="wide")
+st.set_page_config(page_title="Helmet Safety · Phân tích mũ bảo hộ", page_icon="⛑️",
+                   layout="wide", initial_sidebar_state="collapsed")
 
 
 # --------------------------------------------------------------------------- tài nguyên
@@ -76,39 +81,48 @@ def persons_table(rows: list[dict]) -> pd.DataFrame:
     if not rows:
         return pd.DataFrame()
     df = pd.DataFrame(rows)
+    for column in ("person_confidence", "helmet_confidence", "helmet_match_score",
+                   "helmet_evidence", "no_helmet_confidence", "no_helmet_match_score",
+                   "no_helmet_evidence"):
+        if column in df:
+            df[column] = pd.to_numeric(df[column], errors="coerce")
     df["Trạng thái"] = df["status"].map(STATUS_VI)
     cols = {"image_name": "Ảnh", "person_id": "Person ID", "Trạng thái": "Trạng thái",
             "rule_id": "Luật", "source": "Nguồn", "person_confidence": "Conf. người",
             "helmet_confidence": "Conf. mũ", "helmet_match_score": "Điểm ghép mũ",
-            "no_helmet_confidence": "Conf. no_helmet", "reason": "Giải thích"}
+            "helmet_evidence": "Bằng chứng mũ", "no_helmet_confidence": "Conf. no_helmet",
+            "no_helmet_match_score": "Điểm ghép no_helmet",
+            "no_helmet_evidence": "Bằng chứng no_helmet", "reason": "Giải thích"}
     return df[[c for c in cols if c in df.columns]].rename(columns=cols)
 
 
 # --------------------------------------------------------------------------- sidebar
 def sidebar() -> HelmetPipeline | None:
-    st.sidebar.header("⚙️ Cài đặt")
-    models = sorted(p for p in (ROOT / "models").glob("*.pt") if "pose" not in p.stem)
-    if not models:
-        st.sidebar.error("Không có mô hình .pt trong thư mục models/")
-        return None
-    default = next((i for i, m in enumerate(models) if m.name == "best.pt"), 0)
-    model = st.sidebar.selectbox("Mô hình", models, index=default, format_func=lambda p: p.name)
+    st.sidebar.markdown("## ⛑ Helmet Safety")
+    st.sidebar.caption("Điều chỉnh cấu hình cho ảnh công trường của bạn.")
+    settings = st.sidebar.expander("Cấu hình phân tích", expanded=False)
     defaults = DetectorConfig()
-    st.sidebar.markdown("**Confidence threshold**")
-    conf_person = st.sidebar.slider("Person", 0.05, 0.95, defaults.conf_person, 0.05)
-    conf_helmet = st.sidebar.slider("helmet", 0.05, 0.95, defaults.conf_helmet, 0.05)
-    conf_no_helmet = st.sidebar.slider("no_helmet", 0.01, 0.50, defaults.conf_no_helmet, 0.01)
+    model = Path(defaults.model_path)
+    if not model.is_file():
+        model = ROOT / "models" / "yolo26n.pt"
+    if not model.is_file():
+        st.sidebar.error("Thiếu mô hình PPE trong thư mục models/.")
+        return None
+    settings.markdown("**Ngưỡng confidence phát hiện**")
+    conf_person = settings.slider("Person", 0.05, 0.95, defaults.conf_person, 0.05)
+    conf_helmet = settings.slider("helmet", 0.05, 0.95, defaults.conf_helmet, 0.05)
+    conf_no_helmet = settings.slider("no_helmet", 0.01, 0.50, defaults.conf_no_helmet, 0.01)
     pose_available = Path(defaults.pose_model_path).is_file()
-    use_pose = st.sidebar.toggle("Dùng mô hình pose (ảnh đông người)",
+    use_pose = settings.toggle("Dùng mô hình pose (ảnh đông người)",
                                  value=defaults.use_pose and pose_available,
                                  disabled=not pose_available,
                                  help="YOLO26n-pose bổ sung người bị che khuất và định vị đầu thật "
                                       "để không gán nhầm mũ của người đứng phía sau.")
-    conf_pose_person = st.sidebar.slider("Người (pose)", 0.05, 0.95, defaults.conf_pose_person,
+    conf_pose_person = settings.slider("Người (pose)", 0.05, 0.95, defaults.conf_pose_person,
                                          0.05, disabled=not use_pose)
-    imgsz = st.sidebar.select_slider("Image size", [320, 416, 480, 640, 800, 960, 1280],
+    imgsz = settings.select_slider("Kích thước suy luận", [320, 416, 480, 640, 800, 960, 1280],
                                      value=defaults.imgsz)
-    st.sidebar.caption("Giá trị mặc định được dò trên tập validation. Ngưỡng thấp → phát hiện "
+    settings.caption("Giá trị mặc định được dò trên tập validation. Ngưỡng thấp → phát hiện "
                        "nhiều hơn nhưng dễ báo nhầm. Lớp no_helmet hiếm nên mô hình cho "
                        "confidence thấp, cần ngưỡng riêng nhỏ hơn.")
     try:
@@ -120,24 +134,41 @@ def sidebar() -> HelmetPipeline | None:
 
 
 # --------------------------------------------------------------------------- chế độ một ảnh
-def _pick_single_image() -> tuple[bytes, str] | None:
+def _pick_single_image(key_prefix: str = "single") -> tuple[bytes, str] | None:
     """Ảnh người dùng tải lên, hoặc một ảnh mẫu có sẵn trong dự án."""
     samples = list_images(SAMPLE_DIR) if SAMPLE_DIR.is_dir() else []
     source = "Tải ảnh lên"
     if samples:
-        source = st.radio("Nguồn ảnh", ["Tải ảnh lên", "Dùng ảnh mẫu (đám đông)"],
-                          horizontal=True, key="single_source")
+        source = st.radio("Nguồn ảnh", ["Tải ảnh lên", "Dùng ảnh mẫu (đám đông)"], index=1,
+                          horizontal=True, key=f"{key_prefix}_source")
     if source == "Tải ảnh lên":
-        upload = st.file_uploader("Chọn một ảnh", type=UPLOAD_TYPES, key="single")
+        upload = st.file_uploader("Chọn một ảnh", type=UPLOAD_TYPES, key=key_prefix)
         return (upload.getvalue(), upload.name) if upload is not None else None
-    sample = st.selectbox("Ảnh mẫu", samples, format_func=lambda p: p.name)
-    return sample.read_bytes(), sample.name
+    sample = st.selectbox("Ảnh mẫu", samples, format_func=lambda p: p.name, key=f"{key_prefix}_sample")
+    try:
+        return sample.read_bytes(), sample.name
+    except OSError as exc:
+        st.error(f"Không đọc được ảnh mẫu {sample.name}: {exc}")
+        return None
 
 
-def single_image_tab(pipeline: HelmetPipeline) -> None:
-    picked = _pick_single_image()
+def single_image_tab(pipeline: HelmetPipeline | None) -> None:
+    preview, controls = st.columns([2.3, 1], gap="large")
+    display = preview.container(key="single_preview")
+    with controls, st.container(border=True, key="input_panel"):
+        st.subheader("Chọn ảnh phân tích", anchor=False)
+        picked = _pick_single_image()
+        action = st.empty()
+        st.caption("Chọn ảnh rõ vùng đầu để kiểm tra tình trạng đội mũ của từng người.")
+        if pipeline is not None:
+            st.caption("Hỗ trợ ảnh đông người bằng pose" if pipeline.pose is not None
+                       else "Đang sử dụng mô hình phát hiện mũ bảo hộ")
+        else:
+            st.error("Chưa có mô hình PPE sẵn sàng. Mở cấu hình ở thanh bên để xem chi tiết.")
     if picked is None:
-        st.info("Tải lên một ảnh công trường để bắt đầu.")
+        with display, st.container(border=True):
+            st.subheader("Phân tích mũ bảo hộ")
+            st.info("Tải ảnh công trường ở bên cạnh để bắt đầu.")
         return
     data, name = picked
     try:
@@ -146,27 +177,62 @@ def single_image_tab(pipeline: HelmetPipeline) -> None:
         st.error(str(exc))
         return
 
-    left, right = st.columns(2)
-    left.image(to_rgb(image), caption="Ảnh gốc", width="stretch")
-    if not st.button("🔍 Phân tích", type="primary"):
+    config = pipeline.cfg.to_dict() if pipeline is not None else None
+    signature = hashlib.sha256(data + name.encode("utf-8") +
+                               json.dumps(config, sort_keys=True).encode()).hexdigest()
+    cached = st.session_state.get("demo_analysis")
+    has_result = cached is not None and cached[0] == signature
+    run = action.button("Phân tích lại" if has_result else "Phân tích ảnh", type="primary",
+                        icon=":material/document_scanner:", width="stretch",
+                        disabled=pipeline is None)
+    if run:
+        try:
+            with st.spinner("Đang nhận diện, ghép vùng đầu và suy luận hệ luật…"):
+                result = pipeline.analyze(image, name)
+        except Exception as exc:
+            st.error(f"Phân tích ảnh thất bại. Có thể thử lại. Chi tiết lỗi: {exc}")
+            return
+        st.session_state.demo_analysis = (signature, result)
+        st.session_state.demo_step = 3
+        has_result = True
+    if not has_result:
+        st.session_state.demo_step = 0
+        with display:
+            st.image(to_rgb(image), caption=f"{name} · {image.shape[1]} × {image.shape[0]} px",
+                     width="stretch")
         return
-
-    result = pipeline.analyze(image, name)
-    right.image(to_rgb(draw_result(image, result)), caption="Kết quả nhận diện", width="stretch")
-
-    c = st.columns(5)
-    c[0].metric("Số người", len(result.persons))
-    c[1].metric("Số mũ phát hiện", result.count("helmet"))
-    c[2].metric("Đội mũ", result.count_status(Status.HELMET_DETECTED))
-    c[3].metric("Nghi không đội mũ", result.count_status(Status.SUSPECTED_NO_HELMET))
-    c[4].metric("Chưa đủ bằng chứng", result.count_status(Status.UNKNOWN))
-    st.markdown(f"**Trạng thái ảnh:** {STATUS_VI[str(result.image_status)]} "
-                f"· thời gian suy luận {result.inference_ms:.0f} ms")
-
-    if result.persons:
-        st.subheader("Phân tích từng người")
-        st.dataframe(persons_table(person_rows(result)), width="stretch", hide_index=True)
-    with st.expander("Dữ liệu JSON đầy đủ"):
+    result = st.session_state.demo_analysis[1]
+    with display:
+        show_status_metrics(len(result.persons), {
+            str(status): result.count_status(status) for status in
+            (Status.HELMET_DETECTED, Status.SUSPECTED_NO_HELMET, Status.UNKNOWN)
+        }, key="single_metrics")
+        show_result_overview(image, result, pipeline.cfg, signature[:12], controls)
+    st.caption(f"Thời gian phân tích {result.total_ms:.0f} ms · "
+               f"Nhận diện {result.inference_ms:.0f} ms")
+    with st.container(key="result_downloads"):
+        downloads = st.columns(3)
+    success, encoded = cv2.imencode(".png", draw_result(image, result))
+    if success:
+        downloads[0].download_button("Tải ảnh kết quả", encoded.tobytes(),
+                                     file_name=f"{Path(name).stem}_result.png", mime="image/png",
+                                     icon=":material/download:", width="stretch")
+    table = persons_table(person_rows(result))
+    downloads[1].download_button("Tải bảng CSV", table.to_csv(index=False).encode("utf-8-sig"),
+                                 file_name=f"{Path(name).stem}_persons.csv", mime="text/csv",
+                                 icon=":material/table:", width="stretch")
+    downloads[2].download_button("Tải kết quả JSON",
+                                 json.dumps(result.to_dict(), ensure_ascii=False, indent=2),
+                                 file_name=f"{Path(name).stem}_results.json", mime="application/json",
+                                 icon=":material/data_object:", width="stretch")
+    with st.expander("Xem cách hệ thống kết luận"):
+        show_demo_result(image, result, pipeline.cfg, signature[:12])
+    with st.expander("Bảng kết quả từng người"):
+        if not table.empty:
+            st.dataframe(table, width="stretch", hide_index=True)
+        else:
+            st.info("Không phát hiện người để lập bảng kết quả.")
+    with st.expander("Dữ liệu kỹ thuật JSON"):
         st.json(result.to_dict())
 
 
@@ -195,8 +261,13 @@ def _collect_inputs() -> tuple[list[Path], list]:
 
 
 def batch_tab(pipeline: HelmetPipeline) -> None:
+    st.subheader("Phân tích nhiều ảnh")
+    st.caption("Tải ảnh công trường để tổng hợp người cần kiểm tra và xuất báo cáo.")
     paths, uploads = _collect_inputs()
-    if not (paths or uploads) or not st.button("▶️ Bắt đầu phân tích", type="primary"):
+    st.caption(f"{len(paths) + len(uploads)} ảnh đã chọn")
+    run = st.button("Phân tích hàng loạt", type="primary", icon=":material/play_arrow:",
+                    disabled=not (paths or uploads))
+    if not run:
         _show_batch_result()
         return
 
@@ -216,7 +287,13 @@ def batch_tab(pipeline: HelmetPipeline) -> None:
     def on_progress(done: int, total: int, name: str) -> None:
         bar.progress(done / total, text=f"{done}/{total} ảnh · {name}")
 
-    report = run_batch(pipeline, paths, out_dir, progress=on_progress)
+    try:
+        with st.spinner("Đang phân tích ảnh và tạo báo cáo…"):
+            report = run_batch(pipeline, paths, out_dir, progress=on_progress)
+    except Exception as exc:
+        bar.empty()
+        st.error(f"Xử lý hàng loạt thất bại. Có thể thử lại. Chi tiết lỗi: {exc}")
+        return
     bar.progress(1.0, text="Hoàn tất")
     st.session_state["batch_dir"] = str(report.output_dir)
     _show_batch_result()
@@ -231,14 +308,11 @@ def _show_batch_result() -> None:
 
     st.success(f"Kết quả lưu tại: {out_dir}" if LOCAL_MODE
                else "Hoàn tất. Tải kết quả ở thẻ \"Tải về\".")
-    c = st.columns(6)
-    c[0].metric("Ảnh thành công", stats["images_processed"])
-    c[1].metric("Ảnh lỗi", stats["images_failed"])
-    c[2].metric("Tổng số người", stats["persons_total"])
-    c[3].metric("Đội mũ", counts[str(Status.HELMET_DETECTED)])
-    c[4].metric("Nghi không đội mũ", counts[str(Status.SUSPECTED_NO_HELMET)])
-    c[5].metric("Chưa đủ bằng chứng", counts[str(Status.UNKNOWN)])
-    st.caption(f"Tổng thời gian {stats['wall_time_s']:.1f} s · trung bình "
+    show_status_metrics(stats["persons_total"], counts, key="batch_metrics")
+    if stats["images_failed"]:
+        st.warning(f"{stats['images_failed']} ảnh xử lý lỗi. Xem chi tiết trong tệp errors.csv.")
+    st.caption(f"{stats['images_processed']} ảnh thành công · {stats['images_failed']} ảnh lỗi · "
+               f"Tổng thời gian {stats['wall_time_s']:.1f} s · trung bình "
                f"{stats['avg_ms_per_image'] or 0:.0f} ms/ảnh")
 
     summary = pd.DataFrame(read_csv(out_dir / "summary.csv"))
@@ -246,6 +320,9 @@ def _show_batch_result() -> None:
         ["Tổng hợp theo ảnh", "Theo người", "Ảnh kết quả", "Biểu đồ", "Tải về"])
     with tab_sum:
         if not summary.empty:
+            only_suspected = st.toggle("Chỉ hiện ảnh có người nghi không đội mũ")
+            if only_suspected:
+                summary = summary[summary["image_status"] == str(Status.SUSPECTED_NO_HELMET)]
             summary["image_status"] = summary["image_status"].map(STATUS_VI)
         st.dataframe(summary.drop(columns=["annotated_image"], errors="ignore"),
                      width="stretch", hide_index=True)
@@ -263,8 +340,10 @@ def _show_batch_result() -> None:
             cols[i % 2].image(str(chart), width="stretch")
     with tab_dl:
         for name, mime in (("summary.csv", "text/csv"), ("persons.csv", "text/csv"),
-                           ("detections.csv", "text/csv"), ("results.json", "application/json")):
-            st.download_button(f"⬇️ {name}", (out_dir / name).read_bytes(), file_name=name, mime=mime)
+                           ("detections.csv", "text/csv"), ("results.json", "application/json"),
+                           ("errors.csv", "text/csv")):
+            st.download_button(name, (out_dir / name).read_bytes(), file_name=name, mime=mime,
+                               icon=":material/download:")
         st.download_button("⬇️ Ảnh kết quả (ZIP)", zip_folder(out_dir / "annotated_images"),
                            file_name="annotated_images.zip", mime="application/zip")
 
@@ -281,17 +360,36 @@ def about_tab() -> None:
 
 
 def main() -> None:
-    st.title("⛑️ Phát hiện mũ bảo hộ lao động & suy luận vi phạm")
+    st.html(f"<style>{(ROOT / 'app' / 'style.css').read_text(encoding='utf-8')}</style>")
     pipeline = sidebar()
-    single, batch, about = st.tabs(["🖼️ Một ảnh", "🗂️ Nhiều ảnh", "ℹ️ Phương pháp"])
+    with st.container(key="dashboard_header"):
+        heading, status = st.columns([2.3, 1], gap="large")
+        with heading:
+            st.caption("HELMET SAFETY")
+            st.title("An toàn mũ bảo hộ")
+            st.write("Phân tích ảnh công trường và kiểm tra bằng chứng của từng người.")
+        status_key = "system_status" if pipeline is not None else "system_status_unavailable"
+        with status, st.container(key=status_key):
+            if pipeline is None:
+                st.markdown("**Hệ thống cần kiểm tra**")
+                st.caption("Xem thông tin mô hình ở thanh bên.")
+            else:
+                st.markdown("**Sẵn sàng phân tích**")
+                st.caption("Pose đang hỗ trợ ảnh đông người" if pipeline.pose is not None
+                           else "Nhận diện người, mũ và vùng đầu")
+    single, batch, comparison, about = st.tabs(
+        ["Phân tích ảnh", "Xử lý hàng loạt", "So sánh & đánh giá", "Giải thích hệ thống"])
     with about:
         about_tab()
-    if pipeline is None:
-        st.stop()
     with single:
         single_image_tab(pipeline)
+    with comparison:
+        comparison_tab(pipeline, _pick_single_image)
     with batch:
-        batch_tab(pipeline)
+        if pipeline is not None:
+            batch_tab(pipeline)
+        else:
+            st.info("Mô hình PPE chưa sẵn sàng để xử lý hàng loạt. Xem chi tiết ở thanh bên.")
 
 
 main()

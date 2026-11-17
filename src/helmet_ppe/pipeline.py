@@ -49,6 +49,7 @@ def analyze_detections(detections: list[Detection], *, image_name: str, image_pa
         unmatched_no_helmet_ids=matched.unmatched_no_helmet_ids,
         merged_pose_ids=merged,
         inference_ms=inference_ms,
+        raw_detections=list(detections),
     )
 
 

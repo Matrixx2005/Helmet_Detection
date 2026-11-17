@@ -174,6 +174,7 @@ class ImageResult:
     merged_pose_ids: dict[int, int] = field(default_factory=dict)  # người PPE → người pose
     inference_ms: float = 0.0
     total_ms: float = 0.0
+    raw_detections: list[Detection] = field(default_factory=list)
 
     def count(self, label: str) -> int:
         return sum(1 for det in self.detections if det.label == label)
@@ -191,6 +192,7 @@ class ImageResult:
             "inference_ms": round(self.inference_ms, 2),
             "total_ms": round(self.total_ms, 2),
             "detections": [det.to_dict() for det in self.detections],
+            "raw_detections": [det.to_dict() for det in self.raw_detections],
             "persons": [person.to_dict() for person in self.persons],
             "unmatched_helmet_ids": list(self.unmatched_helmet_ids),
             "unmatched_no_helmet_ids": list(self.unmatched_no_helmet_ids),

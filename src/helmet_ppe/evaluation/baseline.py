@@ -10,15 +10,47 @@ khác biệt so với hệ thống chỉ đến từ bước suy luận.
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 from helmet_ppe import geometry
 from helmet_ppe.config import HELMET, PERSON, Status
+from helmet_ppe.rule_engine import summarize_image
+from helmet_ppe.schemas import HeadEvidence, ImageResult
 
 
 def _center_inside(point: tuple[float, float], box) -> bool:
     x, y = point
     return box[0] <= x <= box[2] and box[1] <= y <= box[3]
+
+
+def naive_image_result(result: ImageResult) -> ImageResult:
+    """Đối chứng trên cùng người sau hợp nhất và hộp sau lọc của pipeline.
+
+    Giữ nguyên ID/khung người, dùng tâm mũ trong khung để kết luận. Một hộp mũ
+    có thể nằm trong nhiều người. Không dùng no_helmet hay ngưỡng bằng chứng.
+    API đọc JSON cũ bên dưới tiếp tục dùng danh sách người PPE trong tệp.
+    """
+    helmets = [d for d in result.detections if d.label == HELMET]
+    persons = []
+    used = set()
+    for person in result.persons:
+        matches = [d for d in helmets if _center_inside(geometry.center(d.bbox), person.bbox)]
+        evidence = None
+        reason = "Không có tâm hộp mũ trong khung người nên đối chứng gán nghi không đội mũ."
+        if matches:
+            strongest = max(matches, key=lambda d: (d.confidence, -d.det_id))
+            evidence = HeadEvidence(strongest.det_id, strongest.confidence, 1.0, strongest.bbox)
+            used.add(strongest.det_id)
+            ids = ", ".join(f"D{d.det_id}" for d in matches)
+            reason = f"Tâm hộp mũ {ids} nằm trong khung người nên đối chứng gán đội mũ."
+        persons.append(replace(
+            person, status=Status.HELMET_DETECTED if matches else Status.SUSPECTED_NO_HELMET,
+            rule_id="BASELINE", reason=reason, helmet=evidence, no_helmet=None, head=None, flags=[],
+        ))
+    return replace(result, persons=persons, image_status=summarize_image(persons),
+                   unmatched_helmet_ids=[d.det_id for d in helmets if d.det_id not in used],
+                   unmatched_no_helmet_ids=[])
 
 
 def naive_person_rows(results_json: Path) -> list[dict]:

@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.test-tmp*/
 .env
 .ipynb_checkpoints/
 
@@ -26,6 +27,7 @@ models/*.bin
 # Đưa trọng số đã huấn luyện lên GitHub để bản Streamlit Cloud chạy được (< 30 MB mỗi tệp)
 !models/best.pt
 !models/yolo26n-pose.pt
+!models/yolo26n.pt
 
 # Dataset Roboflow tải về và bộ gộp sinh ra (lớn, tạo lại được)
 data/roboflow_*/
